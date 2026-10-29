@@ -74,4 +74,3 @@ export class LocalFoodRepository implements FoodRepository {
 }
 
 export const localFoodRepo = new LocalFoodRepository();
-export const localAuthRepoInstance = new (await import("./localAuthRepository")).LocalAuthRepository();

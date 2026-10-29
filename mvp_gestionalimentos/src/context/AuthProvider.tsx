@@ -3,6 +3,7 @@
 import React, { createContext, useContext, useEffect, useState } from "react";
 import { User, Session } from "@/types";
 import { authRepo } from "@/lib/storage";
+import { DEMO_EMAIL, DEMO_PASSWORD, DEMO_NAME } from "@/config/demo";
 
 interface AuthContextType {
   user: User | null;
@@ -10,6 +11,7 @@ interface AuthContextType {
   isLoading: boolean;
   login: (email: string, password: string) => Promise<void>;
   register: (name: string, email: string, password: string) => Promise<void>;
+  loginDemo: () => Promise<void>;
   logout: () => Promise<void>;
 }
 
@@ -57,8 +59,17 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     setSession(null);
   };
 
+  const loginDemo = async () => {
+    try {
+      await authRepo.register(DEMO_NAME, DEMO_EMAIL, DEMO_PASSWORD);
+    } catch {
+      // la cuenta demo ya existe, continuar al login
+    }
+    await login(DEMO_EMAIL, DEMO_PASSWORD);
+  };
+
   return (
-    <AuthContext.Provider value={{ user, session, isLoading, login, register, logout }}>
+    <AuthContext.Provider value={{ user, session, isLoading, login, register, loginDemo, logout }}>
       {children}
     </AuthContext.Provider>
   );

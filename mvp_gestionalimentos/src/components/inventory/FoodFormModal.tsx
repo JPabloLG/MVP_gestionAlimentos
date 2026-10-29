@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { foodSchema, FoodFormData, foodCategories, units } from "@/lib/validation/food";
@@ -11,8 +11,11 @@ import { Select } from "@/components/ui/Select";
 import { Button } from "@/components/ui/Button";
 import { useFoods } from "@/hooks/useFoods";
 import { useToast } from "@/context/ToastProvider";
+import { useIsDesktop } from "@/hooks/useIsDesktop";
 import { categoryMeta } from "@/data/categories";
 import { FoodItem } from "@/types";
+import { fileToCompressedDataUrl } from "@/lib/image";
+import { Camera, X as XIcon } from "lucide-react";
 
 interface FoodFormModalProps {
   isOpen: boolean;
@@ -24,7 +27,11 @@ interface FoodFormModalProps {
 export function FoodFormModal({ isOpen, onClose, editFood, onSuccess }: FoodFormModalProps) {
   const { addFood, updateFood } = useFoods();
   const { showToast } = useToast();
+  const isDesktop = useIsDesktop();
   const [showAddAnother, setShowAddAnother] = useState(false);
+  const [photoPreview, setPhotoPreview] = useState<string>("");
+  const [isProcessingPhoto, setIsProcessingPhoto] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   const {
     register,
@@ -41,6 +48,7 @@ export function FoodFormModal({ isOpen, onClose, editFood, onSuccess }: FoodForm
       category: "otros",
       expiresAt: "",
       notes: "",
+      photoUrl: "",
     },
   });
 
@@ -52,6 +60,8 @@ export function FoodFormModal({ isOpen, onClose, editFood, onSuccess }: FoodForm
       setValue("category", editFood.category);
       setValue("expiresAt", editFood.expiresAt);
       setValue("notes", editFood.notes || "");
+      setValue("photoUrl", editFood.photoUrl || "");
+      setPhotoPreview(editFood.photoUrl || "");
     } else {
       reset({
         name: "",
@@ -60,9 +70,37 @@ export function FoodFormModal({ isOpen, onClose, editFood, onSuccess }: FoodForm
         category: "otros",
         expiresAt: "",
         notes: "",
+        photoUrl: "",
       });
+      setPhotoPreview("");
     }
   }, [editFood, isOpen, setValue, reset]);
+
+  const handlePhotoChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    if (!file.type.startsWith("image/")) {
+      showToast("Selecciona un archivo de imagen válido", "error");
+      return;
+    }
+    setIsProcessingPhoto(true);
+    try {
+      const dataUrl = await fileToCompressedDataUrl(file);
+      setValue("photoUrl", dataUrl);
+      setPhotoPreview(dataUrl);
+    } catch (err) {
+      const message = err instanceof Error ? err.message : "No se pudo cargar la foto";
+      showToast(message, "error");
+    } finally {
+      setIsProcessingPhoto(false);
+      if (fileInputRef.current) fileInputRef.current.value = "";
+    }
+  };
+
+  const removePhoto = () => {
+    setValue("photoUrl", "");
+    setPhotoPreview("");
+  };
 
   const addDays = (days: number) => {
     const d = new Date();
@@ -84,6 +122,7 @@ export function FoodFormModal({ isOpen, onClose, editFood, onSuccess }: FoodForm
           category: data.category,
           expiresAt: data.expiresAt,
           notes: data.notes?.trim() || "",
+          photoUrl: data.photoUrl || "",
         });
         showToast("Alimento actualizado");
         onClose();
@@ -95,6 +134,7 @@ export function FoodFormModal({ isOpen, onClose, editFood, onSuccess }: FoodForm
           category: data.category,
           expiresAt: data.expiresAt,
           notes: data.notes?.trim() || "",
+          photoUrl: data.photoUrl || "",
         });
         showToast("Alimento agregado");
         if (showAddAnother) {
@@ -105,7 +145,9 @@ export function FoodFormModal({ isOpen, onClose, editFood, onSuccess }: FoodForm
             category: "otros",
             expiresAt: "",
             notes: "",
+            photoUrl: "",
           });
+          setPhotoPreview("");
           setShowAddAnother(false);
         } else {
           onClose();
@@ -119,6 +161,46 @@ export function FoodFormModal({ isOpen, onClose, editFood, onSuccess }: FoodForm
 
   const formContent = (
     <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
+      <div>
+        <label className="block text-sm font-medium mb-2">Foto (opcional)</label>
+        <div className="flex items-center gap-3">
+          {photoPreview ? (
+            <div className="relative w-20 h-20 rounded-xl overflow-hidden border border-border flex-shrink-0">
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img src={photoPreview} alt="Foto del alimento" className="w-full h-full object-cover" />
+              <button
+                type="button"
+                onClick={removePhoto}
+                aria-label="Quitar foto"
+                className="absolute top-1 right-1 bg-black/60 text-white rounded-full p-1"
+              >
+                <XIcon size={14} />
+              </button>
+            </div>
+          ) : (
+            <div className="w-20 h-20 rounded-xl border border-dashed border-border flex items-center justify-center text-ink-muted flex-shrink-0">
+              <Camera size={24} />
+            </div>
+          )}
+          <Button
+            type="button"
+            variant="secondary"
+            size="sm"
+            onClick={() => fileInputRef.current?.click()}
+            disabled={isProcessingPhoto}
+          >
+            {isProcessingPhoto ? "Procesando..." : photoPreview ? "Cambiar foto" : "Agregar foto"}
+          </Button>
+          <input
+            ref={fileInputRef}
+            type="file"
+            accept="image/*"
+            capture="environment"
+            onChange={handlePhotoChange}
+            className="hidden"
+          />
+        </div>
+      </div>
       <Input label="Nombre" {...register("name")} error={errors.name?.message} />
       <div className="grid grid-cols-2 gap-3">
         <Input
@@ -195,18 +277,15 @@ export function FoodFormModal({ isOpen, onClose, editFood, onSuccess }: FoodForm
     </form>
   );
 
-  return (
-    <>
-      <div className="hidden md:block">
-        <Modal isOpen={isOpen} onClose={onClose} title={editFood ? "Editar alimento" : "Agregar alimento"}>
-          {formContent}
-        </Modal>
-      </div>
-      <div className="md:hidden">
-        <BottomSheet isOpen={isOpen} onClose={onClose} title={editFood ? "Editar alimento" : "Agregar alimento"}>
-          {formContent}
-        </BottomSheet>
-      </div>
-    </>
+  const title = editFood ? "Editar alimento" : "Agregar alimento";
+
+  return isDesktop ? (
+    <Modal isOpen={isOpen} onClose={onClose} title={title}>
+      {formContent}
+    </Modal>
+  ) : (
+    <BottomSheet isOpen={isOpen} onClose={onClose} title={title}>
+      {formContent}
+    </BottomSheet>
   );
 }

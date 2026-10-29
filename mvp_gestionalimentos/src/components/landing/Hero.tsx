@@ -1,14 +1,30 @@
 "use client";
 
-import React from "react";
+import React, { useState } from "react";
 import { Button } from "@/components/ui/Button";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { motion } from "framer-motion";
 import { useReducedMotionSafe } from "@/hooks/useReducedMotionSafe";
+import { useAuth } from "@/hooks/useAuth";
 import { siteConfig } from "@/config/site";
 
 export function Hero() {
   const reduced = useReducedMotionSafe();
+  const { loginDemo } = useAuth();
+  const router = useRouter();
+  const [isDemoLoading, setIsDemoLoading] = useState(false);
+
+  const handleDemoLogin = async () => {
+    setIsDemoLoading(true);
+    try {
+      await loginDemo();
+      router.push("/dashboard");
+    } catch {
+      setIsDemoLoading(false);
+    }
+  };
+
   return (
     <section className="py-16 px-4">
       <div className="max-w-4xl mx-auto text-center">
@@ -42,6 +58,9 @@ export function Hero() {
               Iniciar sesión
             </Button>
           </Link>
+          <Button variant="ghost" size="lg" onClick={handleDemoLogin} disabled={isDemoLoading}>
+            {isDemoLoading ? "Entrando..." : "Probar con cuenta demo"}
+          </Button>
         </motion.div>
       </div>
     </section>

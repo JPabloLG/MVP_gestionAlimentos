@@ -28,6 +28,7 @@ export interface FoodItem {
   category: FoodCategory;
   expiresAt: string; // "YYYY-MM-DD" (fecha local, NO ISO con hora)
   notes?: string; // opcional, máx. 120 caracteres
+  photoUrl?: string; // data URL (base64), opcional
   createdAt: string; // ISO
   updatedAt: string; // ISO
 }

@@ -27,6 +27,7 @@ export const foodSchema = z.object({
   category: z.enum(foodCategories, { required_error: "Selecciona una categoría" }),
   expiresAt: z.string().min(1, "Selecciona una fecha de vencimiento"),
   notes: z.string().max(120, "Máximo 120 caracteres").optional().or(z.literal("")),
+  photoUrl: z.string().optional().or(z.literal("")),
 });
 
 export type FoodFormData = z.infer<typeof foodSchema>;

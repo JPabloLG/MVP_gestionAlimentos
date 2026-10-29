@@ -5,6 +5,8 @@ import { FoodItem, UserStats } from "@/types";
 import { foodRepo } from "@/lib/storage";
 import { LocalFoodRepository } from "@/lib/storage/localFoodRepository";
 import { useAuth } from "./AuthProvider";
+import { DEMO_EMAIL } from "@/config/demo";
+import { demoPhotos } from "@/data/demoPhotos";
 
 interface FoodsContextType {
   foods: FoodItem[];
@@ -23,6 +25,47 @@ const FoodsContext = createContext<FoodsContextType | undefined>(undefined);
 
 const localRepo = foodRepo as LocalFoodRepository;
 
+function buildDemoFoods(): Array<Omit<FoodItem, "id" | "userId" | "createdAt" | "updatedAt">> {
+  const today = new Date();
+  const addDays = (days: number) => {
+    const d = new Date(today);
+    d.setDate(d.getDate() + days);
+    const yyyy = d.getFullYear();
+    const mm = String(d.getMonth() + 1).padStart(2, "0");
+    const dd = String(d.getDate()).padStart(2, "0");
+    return `${yyyy}-${mm}-${dd}`;
+  };
+  return [
+    { name: "Leche", quantity: 1, unit: "l", category: "lacteos", expiresAt: addDays(7), photoUrl: demoPhotos.leche },
+    { name: "Huevos", quantity: 12, unit: "unidades", category: "despensa", expiresAt: addDays(14) },
+    { name: "Tomate", quantity: 6, unit: "unidades", category: "verduras", expiresAt: addDays(1) },
+    { name: "Pollo", quantity: 500, unit: "g", category: "carnes", expiresAt: addDays(0) },
+    { name: "Banano maduro", quantity: 6, unit: "unidades", category: "frutas", expiresAt: addDays(-1) },
+    { name: "Arroz", quantity: 1, unit: "kg", category: "granos", expiresAt: addDays(60) },
+    { name: "Queso", quantity: 250, unit: "g", category: "lacteos", expiresAt: addDays(4) },
+    { name: "Cebolla", quantity: 1, unit: "kg", category: "verduras", expiresAt: addDays(10) },
+    { name: "Aguacate", quantity: 2, unit: "unidades", category: "frutas", expiresAt: addDays(2), photoUrl: demoPhotos.aguacate },
+    { name: "Yogurt", quantity: 4, unit: "unidades", category: "lacteos", expiresAt: addDays(3) },
+    { name: "Pan", quantity: 1, unit: "paquetes", category: "panaderia", expiresAt: addDays(5) },
+    { name: "Manzanas", quantity: 5, unit: "unidades", category: "frutas", expiresAt: addDays(6), photoUrl: demoPhotos.manzanas },
+    { name: "Zanahoria", quantity: 1, unit: "kg", category: "verduras", expiresAt: addDays(-2), notes: "Revisar antes de usar" },
+  ];
+}
+
+async function seedDemoFoods(userId: string): Promise<void> {
+  const now = new Date().toISOString();
+  for (const item of buildDemoFoods()) {
+    await foodRepo.addFood({
+      ...item,
+      id: crypto.randomUUID(),
+      userId,
+      createdAt: now,
+      updatedAt: now,
+      notes: item.notes || "",
+    });
+  }
+}
+
 export function FoodsProvider({ children }: { children: React.ReactNode }) {
   const { user, session } = useAuth();
   const [foods, setFoods] = useState<FoodItem[]>([]);
@@ -39,7 +82,14 @@ export function FoodsProvider({ children }: { children: React.ReactNode }) {
       }
       setIsLoading(true);
       try {
-        const f = await foodRepo.getFoods(user.id);
+        let f = await foodRepo.getFoods(user.id);
+        if (f.length === 0 && user.email === DEMO_EMAIL) {
+          await seedDemoFoods(user.id);
+          if (localRepo.updateStats) {
+            localRepo.updateStats(user.id, { rescued: 6, wasted: 1 });
+          }
+          f = await foodRepo.getFoods(user.id);
+        }
         setFoods(f);
         if (localRepo.getStats) {
           setStats(localRepo.getStats(user.id));
@@ -51,7 +101,7 @@ export function FoodsProvider({ children }: { children: React.ReactNode }) {
       }
     };
     load();
-  }, [user?.id]);
+  }, [user?.id, user?.email]);
 
   const loadFoods = async () => {
     if (!user?.id) {
@@ -124,30 +174,8 @@ export function FoodsProvider({ children }: { children: React.ReactNode }) {
 
   const loadDemoFoods = async () => {
     if (!user?.id) return;
-    const today = new Date();
-    const addDays = (days: number) => {
-      const d = new Date(today);
-      d.setDate(d.getDate() + days);
-      const yyyy = d.getFullYear();
-      const mm = String(d.getMonth() + 1).padStart(2, "0");
-      const dd = String(d.getDate()).padStart(2, "0");
-      return `${yyyy}-${mm}-${dd}`;
-    };
-    const demo: Array<Omit<FoodItem, "id" | "userId" | "createdAt" | "updatedAt">> = [
-      { name: "Leche", quantity: 1, unit: "l", category: "lacteos", expiresAt: addDays(7) },
-      { name: "Huevos", quantity: 12, unit: "unidades", category: "despensa", expiresAt: addDays(14) },
-      { name: "Tomate", quantity: 6, unit: "unidades", category: "verduras", expiresAt: addDays(1) },
-      { name: "Pollo", quantity: 500, unit: "g", category: "carnes", expiresAt: addDays(0) },
-      { name: "Banano maduro", quantity: 6, unit: "unidades", category: "frutas", expiresAt: addDays(-1) },
-      { name: "Arroz", quantity: 1, unit: "kg", category: "granos", expiresAt: addDays(60) },
-      { name: "Queso", quantity: 250, unit: "g", category: "lacteos", expiresAt: addDays(4) },
-      { name: "Cebolla", quantity: 1, unit: "kg", category: "verduras", expiresAt: addDays(10) },
-      { name: "Aguacate", quantity: 2, unit: "unidades", category: "frutas", expiresAt: addDays(2) },
-      { name: "Yogurt", quantity: 4, unit: "unidades", category: "lacteos", expiresAt: addDays(3) },
-      { name: "Pan", quantity: 1, unit: "paquetes", category: "panaderia", expiresAt: addDays(5) },
-    ];
-    for (const d of demo) {
-      await addFood(d);
+    for (const item of buildDemoFoods()) {
+      await addFood(item);
     }
   };
 

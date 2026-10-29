@@ -23,7 +23,16 @@ export function FoodCard({ food }: { food: FoodItem }) {
         <Card>
           <div className="flex items-start justify-between mb-2">
             <div className="flex items-center gap-2">
-              <span className="text-xl">{categoryMeta[food.category].emoji}</span>
+              {food.photoUrl ? (
+                // eslint-disable-next-line @next/next/no-img-element
+                <img
+                  src={food.photoUrl}
+                  alt={food.name}
+                  className="w-10 h-10 rounded-lg object-cover flex-shrink-0"
+                />
+              ) : (
+                <span className="text-xl">{categoryMeta[food.category].emoji}</span>
+              )}
               <div>
                 <h3 className="font-semibold">{food.name}</h3>
                 <p className="text-sm text-ink-muted">
