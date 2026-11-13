@@ -78,7 +78,7 @@ export function FoodFormModal({ isOpen, onClose, editFood, onSuccess }: FoodForm
   const onSubmit = async (data: FoodFormData) => {
     try {
       if (editFood) {
-        await updateFood({
+        const saved = await updateFood({
           ...editFood,
           name: data.name.trim(),
           quantity: Number(data.quantity),
@@ -87,10 +87,11 @@ export function FoodFormModal({ isOpen, onClose, editFood, onSuccess }: FoodForm
           expiresAt: data.expiresAt,
           notes: data.notes?.trim() || "",
         });
+        if (!saved) return;
         showToast("Alimento actualizado");
         onClose();
       } else {
-        await addFood({
+        const saved = await addFood({
           name: data.name.trim(),
           quantity: Number(data.quantity),
           unit: data.unit,
@@ -98,6 +99,7 @@ export function FoodFormModal({ isOpen, onClose, editFood, onSuccess }: FoodForm
           expiresAt: data.expiresAt,
           notes: data.notes?.trim() || "",
         });
+        if (!saved) return;
         showToast("Alimento agregado");
         if (showAddAnother) {
           reset({
