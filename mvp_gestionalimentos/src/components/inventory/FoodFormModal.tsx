@@ -13,6 +13,7 @@ import { useFoods } from "@/hooks/useFoods";
 import { useToast } from "@/context/ToastProvider";
 import { categoryMeta } from "@/data/categories";
 import { FoodItem } from "@/types";
+import { useIsDesktop } from "@/hooks/useIsDesktop";
 
 interface FoodFormModalProps {
   isOpen: boolean;
@@ -24,6 +25,7 @@ interface FoodFormModalProps {
 export function FoodFormModal({ isOpen, onClose, editFood, onSuccess }: FoodFormModalProps) {
   const { addFood, updateFood } = useFoods();
   const { showToast } = useToast();
+  const isDesktop = useIsDesktop();
   const [showAddAnother, setShowAddAnother] = useState(false);
 
   const {
@@ -195,18 +197,11 @@ export function FoodFormModal({ isOpen, onClose, editFood, onSuccess }: FoodForm
     </form>
   );
 
+  // One container only: rendering both and hiding one by CSS duplicated the form.
+  const Container = isDesktop ? Modal : BottomSheet;
   return (
-    <>
-      <div className="hidden md:block">
-        <Modal isOpen={isOpen} onClose={onClose} title={editFood ? "Editar alimento" : "Agregar alimento"}>
-          {formContent}
-        </Modal>
-      </div>
-      <div className="md:hidden">
-        <BottomSheet isOpen={isOpen} onClose={onClose} title={editFood ? "Editar alimento" : "Agregar alimento"}>
-          {formContent}
-        </BottomSheet>
-      </div>
-    </>
+    <Container isOpen={isOpen} onClose={onClose} title={editFood ? "Editar alimento" : "Agregar alimento"}>
+      {formContent}
+    </Container>
   );
 }

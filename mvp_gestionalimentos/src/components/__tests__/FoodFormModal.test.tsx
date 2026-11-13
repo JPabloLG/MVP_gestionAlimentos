@@ -1,0 +1,79 @@
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
+import React, { act } from 'react';
+import { createRoot, Root } from 'react-dom/client';
+import { FoodFormModal } from '../inventory/FoodFormModal';
+import { ToastProvider } from '@/context/ToastProvider';
+import { dateInDays } from '@/lib/expiry';
+
+const addFood = vi.fn(async () => true);
+
+vi.mock('@/hooks/useFoods', () => ({
+  useFoods: () => ({ foods: [], addFood, updateFood: vi.fn(async () => true) }),
+}));
+vi.mock('@/hooks/useAuth', () => ({ useAuth: () => ({ user: { id: 'u1' } }) }));
+
+function setViewport(desktop: boolean) {
+  window.matchMedia = ((query: string) => ({
+    matches: query.includes('min-width') ? desktop : false,
+    media: query,
+    addEventListener: () => {},
+    removeEventListener: () => {},
+    addListener: () => {}, // legacy API still used by framer-motion
+    removeListener: () => {},
+  })) as unknown as typeof window.matchMedia;
+}
+
+let root: Root;
+let host: HTMLElement;
+
+async function open(desktop: boolean) {
+  setViewport(desktop);
+  await act(async () => {
+    root.render(
+      <ToastProvider>
+        <FoodFormModal isOpen onClose={() => {}} />
+      </ToastProvider>
+    );
+  });
+}
+
+function button(text: string) {
+  const found = Array.from(document.querySelectorAll('button')).find((b) => b.textContent?.trim() === text);
+  if (!found) throw new Error(`No button "${text}"`);
+  return found;
+}
+
+beforeEach(() => {
+  (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
+  localStorage.clear();
+  addFood.mockClear();
+  host = document.createElement('div');
+  document.body.appendChild(host);
+  root = createRoot(host);
+});
+
+afterEach(async () => {
+  await act(async () => root.unmount());
+  host.remove();
+});
+
+describe('FoodFormModal (RF-03)', () => {
+  it.each([
+    ['desktop', true],
+    ['mobile', false],
+  ])('renders a single form on %s and date shortcuts update the visible field', async (_name, desktop) => {
+    await open(desktop);
+    const dates = document.querySelectorAll<HTMLInputElement>('input[name="expiresAt"]');
+    expect(document.querySelectorAll('form')).toHaveLength(1);
+    expect(dates).toHaveLength(1);
+
+    await act(async () => button('+3 días').click());
+    expect(dates[0].value).toBe(dateInDays(3));
+  });
+
+  it('has no duplicated ids, so every label points at its own field', async () => {
+    await open(true);
+    const ids = Array.from(document.querySelectorAll('[id]')).map((el) => el.id);
+    expect(new Set(ids).size).toBe(ids.length);
+  });
+});
