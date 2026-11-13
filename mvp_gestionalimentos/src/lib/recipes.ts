@@ -1,196 +1,199 @@
-/**
- * Recipe recommendation engine (RF-09, RF-10, RN-06).
- *
- * Matching is done by whole words, never by substring: "pan" must not match
- * "panela" nor "agua" match "aguacate". A food satisfies an ingredient when
- * the food name contains every word of the ingredient (or of one of its
- * synonyms), so "Pechuga de pollo" satisfies "pollo" but "Maíz" does not
- * satisfy "harina de maíz".
- *
- * Known limit: word matching cannot tell "Salsa de tomate" from "Tomate".
- * That would need a curated ingredient catalog, which is out of scope.
- */
 import { FoodItem, Recipe, ExpiryStatus, RecipeIngredient } from "@/types";
 import { getDaysRemaining, getExpiryStatus } from "./expiry";
-import { foldText } from "./format";
 
-/** Groups of interchangeable ingredient names. Every member is a synonym of the others. */
-const SYNONYM_GROUPS: string[][] = [
-  ["papa", "patata"],
-  ["platano", "banano", "platano maduro", "banano maduro"],
-  ["cebolla", "cebolleta"],
-  ["yogurt", "yogur"],
-  ["maiz", "mazorca", "choclo"],
-  ["pimenton", "pimiento"],
-];
+const SYNONYMS: Record<string, string[]> = {
+  papa: ["patata"],
+  patata: ["papa"],
+  huevo: ["huevos"],
+  huevos: ["huevo"],
+  cebolla: ["cebolla larga", "cebolleta"],
+  "cebolla larga": ["cebolla"],
+  platano: ["plátano", "banano", "plátano maduro", "banano maduro"],
+  plátano: ["platano", "banano"],
+  banano: ["platano", "plátano"],
+  tomate: ["tomates"],
+  tomates: ["tomate"],
+  pollo: ["pechuga de pollo", "muslo de pollo"],
+  "pechuga de pollo": ["pollo"],
+  "muslo de pollo": ["pollo"],
+  leche: ["leche entera", "leche descremada"],
+  arroz: ["arroz blanco"],
+  pan: ["pan tajado", "pan"],
+};
 
-/** Connectors that carry no meaning when comparing names ("harina de maíz"). */
-const STOPWORDS = new Set(["de", "del", "la", "el", "los", "las", "y", "o", "con", "en"]);
-
-/**
- * Basic Spanish singular. Only needs to be consistent on both sides of a
- * comparison; it is not a full stemmer.
- */
-function singularize(word: string): string {
-  if (word.length <= 3) return word;
-  if (/[aeiou]ces$/.test(word)) return `${word.slice(0, -3)}z`; // nueces -> nuez
-  if (/[aeiou][nlrdjs]es$/.test(word)) return word.slice(0, -2); // panes -> pan, limones -> limon
-  if (word.endsWith("s") && !/[ui]s$/.test(word)) return word.slice(0, -1); // tomates -> tomate
-  return word;
+function removeAccents(text: string): string {
+  return text.normalize("NFD").replace(/[\u0300-\u036f]/g, "");
 }
 
-/**
- * Canonical form of a food or ingredient name: lowercase, no accents, single
- * spaces, each word in singular. Two names are "the same food" when their
- * normalized forms are equal (also used to detect duplicates).
- */
 export function normalize(text: string): string {
   if (!text) return "";
-  return foldText(text).split(" ").map(singularize).join(" ");
+  let t = removeAccents(text.toLowerCase());
+  t = t.replace(/\s+/g, " ").trim();
+  // simple singularization for common Spanish plurals
+  // For words ending in 'es' like 'tomates' (ends in consonant+e+s in some cases) - better to try removing just 's' first in many cases
+  if (t.endsWith("es") && t.length > 4) {
+    // Try removing just 's' first: tomates -> tomate (correct). If that doesn't look right, also try removing 'es'
+    const withoutS = t.slice(0, -1); // tomatoes without final s
+    // prefer withoutS for most cases like tomates, papas
+    t = withoutS;
+  } else if (t.endsWith("s") && t.length > 3 && !t.endsWith("us") && !t.endsWith("is")) {
+    t = t.slice(0, -1);
+  }
+  return t;
 }
 
-function toWords(normalized: string): string[] {
-  return normalized.split(" ").filter((w) => w && !STOPWORDS.has(w));
+function getSynonymKeys(normalized: string): string[] {
+  const keys = new Set<string>([normalized]);
+  // direct synonyms
+  const syns = SYNONYMS[normalized];
+  if (syns) {
+    for (const s of syns) {
+      keys.add(normalize(s));
+    }
+  }
+  // also check if any synonym maps back
+  for (const [k, v] of Object.entries(SYNONYMS)) {
+    const nk = normalize(k);
+    if (nk === normalized) {
+      for (const s of v) {
+        keys.add(normalize(s));
+      }
+    }
+    for (const s of v) {
+      if (normalize(s) === normalized) {
+        keys.add(nk);
+      }
+    }
+  }
+  return Array.from(keys);
 }
 
-const SYNONYMS = new Map<string, string[]>();
-for (const group of SYNONYM_GROUPS) {
-  const members = group.map(normalize);
-  for (const member of members) SYNONYMS.set(member, members);
+function ingredientMatches(ingredientKeyNorm: string, foodNameNorm: string): boolean {
+  const phraseMatches = (phrase: string, text: string) =>
+    phrase === text ||
+    text.startsWith(`${phrase} `) ||
+    text.endsWith(` ${phrase}`) ||
+    text.includes(` ${phrase} `);
+  const ingredients = getSynonymKeys(ingredientKeyNorm);
+  const foods = getSynonymKeys(foodNameNorm);
+  return ingredients.some((ingredient) =>
+    foods.some((food) => phraseMatches(ingredient, food) || phraseMatches(food, ingredient))
+  );
 }
 
-/**
- * Whether a food (normalized name) can be used for an ingredient (normalized key).
- * Exported for tests; the app goes through `analyzeRecipe`.
- */
-export function ingredientMatches(ingredientKeyNorm: string, foodNameNorm: string): boolean {
-  const foodWords = new Set(toWords(foodNameNorm));
-  if (foodWords.size === 0) return false;
-  const alternatives = SYNONYMS.get(ingredientKeyNorm) ?? [ingredientKeyNorm];
-  return alternatives.some((alternative) => {
-    const words = toWords(alternative);
-    return words.length > 0 && words.every((w) => foodWords.has(w));
-  });
+export function matchesIngredient(ingredient: string, foodName: string): boolean {
+  return ingredientMatches(normalize(ingredient), normalize(foodName));
 }
 
-export interface UsedFood {
-  foodId: string;
-  foodName: string;
-  urgency: ExpiryStatus;
-  daysRemaining: number;
-}
-
-/** One recipe ingredient plus the inventory food that covers it, if any. */
-export interface IngredientMatch extends RecipeIngredient {
-  keyNorm: string;
-  food?: UsedFood;
-}
-
-export interface RecipeAnalysis extends Recipe {
-  usedFoods: UsedFood[];
+export interface RecipeInsight extends Recipe {
+  usedFoods: Array<{
+    foodId: string;
+    foodName: string;
+    urgency: ExpiryStatus;
+    daysRemaining: number;
+  }>;
   missingIngredients: Array<RecipeIngredient & { keyNorm: string }>;
-  /** Every ingredient in recipe order, with its matching food when there is one. */
-  ingredientMatches: IngredientMatch[];
-  /** Share of required (non-optional) ingredients covered, 0-1. */
-  coverage: number;
+  coverage: number; // 0-1
   score: number;
-}
-
-export interface RecommendedRecipe extends RecipeAnalysis {
   section: "rescue" | "withwhatyouhave";
+  matchedIngredients: number;
+  requiredIngredients: number;
+  readyToCook: boolean;
+  urgentFoods: Array<{
+    foodId: string;
+    foodName: string;
+    urgency: ExpiryStatus;
+    daysRemaining: number;
+  }>;
 }
 
-interface Candidate extends UsedFood {
-  nameNorm: string;
-}
+export type RecommendedRecipe = RecipeInsight;
 
-/** Non-expired foods, most urgent first, so each ingredient picks the food that needs rescuing most. */
-function toCandidates(foods: FoodItem[], today: Date): Candidate[] {
-  return foods
-    .map((food) => {
-      const daysRemaining = getDaysRemaining(food.expiresAt, today);
-      return {
-        foodId: food.id,
-        foodName: food.name,
-        urgency: getExpiryStatus(daysRemaining),
-        daysRemaining,
-        nameNorm: normalize(food.name),
-      };
-    })
-    .filter((c) => c.urgency !== "expired") // RN-05: expired food is never recommended for cooking
+export function getRecipeInsights(
+  foods: FoodItem[],
+  recipes: Recipe[],
+  today: Date = new Date()
+): RecipeInsight[] {
+  const availableFoods = foods
+    .map((food) => ({
+      food,
+      daysRemaining: getDaysRemaining(food.expiresAt, today),
+    }))
+    .filter(({ daysRemaining }) => daysRemaining >= 0)
     .sort((a, b) => a.daysRemaining - b.daysRemaining);
-}
 
-const URGENCY_WEIGHT: Record<ExpiryStatus, number> = { critical: 5, soon: 3, fresh: 1, expired: 0 };
+  const results: RecipeInsight[] = [];
+  for (const recipe of recipes) {
+    const usedFoods: RecipeInsight["usedFoods"] = [];
+    const missingIngredients: RecipeInsight["missingIngredients"] = [];
+    let matchedIngredients = 0;
+    const nonOptionalIngredients = recipe.ingredients.filter((i) => !i.optional);
 
-function analyze(recipe: Recipe, candidates: Candidate[]): RecipeAnalysis {
-  const usedFoods: UsedFood[] = [];
-  const ingredientMatchList: IngredientMatch[] = recipe.ingredients.map((ing) => {
-    const keyNorm = normalize(ing.key || ing.label);
-    const hit = candidates.find((c) => ingredientMatches(keyNorm, c.nameNorm));
-    if (!hit) return { ...ing, keyNorm };
-    const food: UsedFood = {
-      foodId: hit.foodId,
-      foodName: hit.foodName,
-      urgency: hit.urgency,
-      daysRemaining: hit.daysRemaining,
-    };
-    if (!usedFoods.some((uf) => uf.foodId === food.foodId)) usedFoods.push(food);
-    return { ...ing, keyNorm, food };
+    for (const ing of recipe.ingredients) {
+      const ingKeyNorm = normalize(ing.key || ing.label);
+      const match = availableFoods.find(({ food }) =>
+        ingredientMatches(ingKeyNorm, normalize(food.name))
+      );
+      if (!match) {
+        missingIngredients.push({ ...ing, keyNorm: ingKeyNorm });
+      } else {
+        if (!ing.optional) matchedIngredients++;
+        if (!usedFoods.some((used) => used.foodId === match.food.id)) {
+          usedFoods.push({
+            foodId: match.food.id,
+            foodName: match.food.name,
+            urgency: getExpiryStatus(match.daysRemaining),
+            daysRemaining: match.daysRemaining,
+          });
+        }
+      }
+    }
+
+    const requiredIngredients = nonOptionalIngredients.length;
+    const coverage = requiredIngredients === 0 ? 0 : matchedIngredients / requiredIngredients;
+    const urgentFoods = usedFoods
+      .filter((food) => food.daysRemaining <= 3)
+      .sort((a, b) => a.daysRemaining - b.daysRemaining);
+    const weightSum = usedFoods.reduce((total, food) => {
+      if (food.daysRemaining === 0) return total + 5;
+      if (food.daysRemaining <= 3) return total + 3;
+      return total + 1;
+    }, 0);
+    const score = weightSum + coverage * 10;
+    results.push({
+      ...recipe,
+      usedFoods,
+      missingIngredients,
+      coverage,
+      score,
+      section: urgentFoods.length > 0 ? "rescue" : "withwhatyouhave",
+      matchedIngredients,
+      requiredIngredients,
+      readyToCook: requiredIngredients > 0 && matchedIngredients === requiredIngredients,
+      urgentFoods,
+    });
+  }
+
+  results.sort((a, b) => {
+    if (b.urgentFoods.length !== a.urgentFoods.length) {
+      return b.urgentFoods.length - a.urgentFoods.length;
+    }
+    const aSoonest = a.urgentFoods[0]?.daysRemaining ?? Infinity;
+    const bSoonest = b.urgentFoods[0]?.daysRemaining ?? Infinity;
+    if (aSoonest !== bSoonest) return aSoonest - bSoonest;
+    if (b.coverage !== a.coverage) return b.coverage - a.coverage;
+    if (b.score !== a.score) return b.score - a.score;
+    return a.title.localeCompare(b.title, "es");
   });
-
-  const required = ingredientMatchList.filter((m) => !m.optional);
-  const coverage = required.length === 0 ? 0 : required.filter((m) => m.food).length / required.length;
-  const weightSum = usedFoods.reduce((sum, uf) => sum + URGENCY_WEIGHT[uf.urgency], 0);
-
-  return {
-    ...recipe,
-    usedFoods,
-    missingIngredients: ingredientMatchList
-      .filter((m) => !m.food)
-      .map((m) => ({ key: m.key, label: m.label, optional: m.optional, keyNorm: m.keyNorm })),
-    ingredientMatches: ingredientMatchList,
-    coverage,
-    // Urgency weights plus a coverage bonus. Weights and bonus are a business rule.
-    score: weightSum + coverage * 10,
-  };
+  return results;
 }
 
-/**
- * Compares one recipe against the inventory: which ingredients are covered,
- * by which food, and what is missing. Used by the recipe detail page so it
- * always agrees with the recommendation list.
- */
-export function analyzeRecipe(recipe: Recipe, foods: FoodItem[], today: Date = new Date()): RecipeAnalysis {
-  return analyze(recipe, toCandidates(foods, today));
-}
-
-/**
- * Recommends recipes for the inventory (RF-09).
- * - "rescue": uses at least one critical or soon food (RN-06).
- * - "withwhatyouhave": covers at least 60 % of the required ingredients.
- * Recipes without required ingredients are skipped.
- * Sorted with every "rescue" recipe first, then by score; ties keep catalog order.
- */
 export function recommendRecipes(
   foods: FoodItem[],
   recipes: Recipe[],
   today: Date = new Date()
 ): RecommendedRecipe[] {
-  const candidates = toCandidates(foods, today);
-  const results: RecommendedRecipe[] = [];
-
-  for (const recipe of recipes) {
-    if (!recipe.ingredients.some((i) => !i.optional)) continue;
-    const analysis = analyze(recipe, candidates);
-    const rescues = analysis.usedFoods.some((uf) => uf.urgency === "critical" || uf.urgency === "soon");
-    if (rescues) results.push({ ...analysis, section: "rescue" });
-    else if (analysis.coverage >= 0.6) results.push({ ...analysis, section: "withwhatyouhave" });
-  }
-
-  // RN-06: a recipe that rescues something always outranks one that does not,
-  // whatever the coverage bonus says. Scores only order recipes within a section.
-  return results.sort(
-    (a, b) => Number(b.section === "rescue") - Number(a.section === "rescue") || b.score - a.score
+  return getRecipeInsights(foods, recipes, today).filter(
+    (recipe) => recipe.urgentFoods.length > 0 || recipe.coverage >= 0.6
   );
 }
