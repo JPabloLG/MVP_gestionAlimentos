@@ -29,6 +29,77 @@ beforeEach(() => {
   resetStorageIssues();
 });
 
+describe('accounts (RF-01, RF-02, RNF-03)', () => {
+  it('registers, never stores the password, and signs in', async () => {
+    const user = await auth.register(' Ana ', ' Ana@Correo.co ', 'secreta123');
+    expect(user).toMatchObject({ name: 'Ana', email: 'ana@correo.co' });
+    expect(Object.keys(user).sort()).toEqual(['createdAt', 'email', 'id', 'name']);
+    expect(localStorage.getItem('gestionalo:users')).not.toContain('secreta123');
+
+    const session = await auth.login('ANA@correo.co', 'secreta123');
+    expect(session.userId).toBe(user.id);
+    expect(await auth.getSession()).toEqual(session);
+  });
+
+  it('detects a duplicated email ignoring case and spaces', async () => {
+    await auth.register('Ana', 'ana@correo.co', 'secreta123');
+    await expect(auth.register('Otra', '  ANA@Correo.CO ', 'secreta123')).rejects.toThrow('El correo ya está registrado');
+  });
+
+  it('gives the same error for an unknown email and a wrong password', async () => {
+    await auth.register('Ana', 'ana@correo.co', 'secreta123');
+    const wrongPassword = await auth.login('ana@correo.co', 'otra-clave').catch((e: Error) => e.message);
+    const unknownEmail = await auth.login('nadie@correo.co', 'secreta123').catch((e: Error) => e.message);
+    expect(wrongPassword).toBe('Credenciales inválidas');
+    expect(unknownEmail).toBe(wrongPassword);
+  });
+
+  it('logout removes only the session (RNF-05)', async () => {
+    const user = await auth.register('Ana', 'ana@correo.co', 'secreta123');
+    await auth.login('ana@correo.co', 'secreta123');
+    await foods.addFood(food('a', user.id));
+    await auth.logout();
+
+    expect(await auth.getSession()).toBeNull();
+    expect(await foods.getFoods(user.id)).toHaveLength(1);
+    expect(await auth.getUserById(user.id)).not.toBeNull();
+  });
+});
+
+describe('isolation between users (RN-01, RN-02)', () => {
+  beforeEach(async () => {
+    await foods.addFood(food('a1', 'ana'));
+    await foods.addFood(food('b1', 'beto', { name: 'Pan' }));
+    foods.updateStats('ana', { rescued: 3, wasted: 1 });
+  });
+
+  it('each user only sees their own foods and stats', async () => {
+    expect((await foods.getFoods('ana')).map((f) => f.id)).toEqual(['a1']);
+    expect((await foods.getFoods('beto')).map((f) => f.id)).toEqual(['b1']);
+    expect(foods.getStats('beto')).toEqual({ rescued: 0, wasted: 0 });
+  });
+
+  it('cannot delete or edit a food that belongs to someone else', async () => {
+    await foods.deleteFood('a1', 'beto');
+    await expect(foods.updateFood(food('a1', 'beto', { name: 'Robado' }))).rejects.toThrow();
+
+    expect(await foods.getFoods('ana')).toEqual([food('a1', 'ana')]);
+    expect((await foods.getFoods('beto')).map((f) => f.id)).toEqual(['b1']);
+  });
+
+  it('ignores foods of another user planted under my key', async () => {
+    localStorage.setItem('gestionalo:foods:ana', JSON.stringify([food('a1', 'ana'), food('x', 'beto')]));
+    expect((await foods.getFoods('ana')).map((f) => f.id)).toEqual(['a1']);
+  });
+
+  it('updates a food in place and refreshes updatedAt', async () => {
+    const updated = await foods.updateFood(food('a1', 'ana', { quantity: 2 }));
+    expect(updated.quantity).toBe(2);
+    expect(updated.updatedAt).not.toBe('2026-10-01T10:00:00.000Z');
+    expect(await foods.getFoods('ana')).toHaveLength(1);
+  });
+});
+
 describe('safe reads (RNF-05)', () => {
   it('backs up a corrupt value instead of losing it, and reports it once', async () => {
     const listener = vi.fn();

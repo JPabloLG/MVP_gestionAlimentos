@@ -43,15 +43,11 @@ export class LocalFoodRepository implements FoodRepository {
   async updateFood(food: FoodItem): Promise<FoodItem> {
     const foods = this.readFoods(food.userId);
     const idx = foods.findIndex((f) => f.id === food.id && f.userId === food.userId);
-    if (idx >= 0) {
-      foods[idx] = { ...food, updatedAt: new Date().toISOString() };
-      this.saveFoods(food.userId, foods);
-      return foods[idx];
-    } else {
-      foods.push(food);
-      this.saveFoods(food.userId, foods);
-      return food;
-    }
+    // No upsert: updating a food that is not in this user's inventory must not create it (RN-02).
+    if (idx < 0) throw new Error("El alimento ya no existe en tu inventario.");
+    foods[idx] = { ...food, updatedAt: new Date().toISOString() };
+    this.saveFoods(food.userId, foods);
+    return foods[idx];
   }
 
   async deleteFood(id: string, userId: string): Promise<void> {

@@ -25,9 +25,14 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       try {
         const sess = await authRepo.getSession();
         if (sess) {
-          setSession(sess);
           const u = await authRepo.getUserById(sess.userId);
-          setUser(u);
+          if (u) {
+            setSession(sess);
+            setUser(u);
+          } else {
+            // The session points at an account that no longer exists: drop it for good.
+            await authRepo.logout();
+          }
         }
       } catch {
         // ignore
