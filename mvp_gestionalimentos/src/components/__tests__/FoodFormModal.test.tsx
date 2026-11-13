@@ -43,6 +43,21 @@ function button(text: string) {
   return found;
 }
 
+function field(name: string) {
+  const found = document.querySelector<HTMLInputElement | HTMLSelectElement>(`[name="${name}"]`);
+  if (!found) throw new Error(`No field "${name}"`);
+  return found;
+}
+
+/** Sets a value the way a user would, so React and React Hook Form both notice. */
+async function type(el: HTMLInputElement | HTMLSelectElement, value: string) {
+  const proto = el instanceof HTMLSelectElement ? HTMLSelectElement.prototype : HTMLInputElement.prototype;
+  Object.getOwnPropertyDescriptor(proto, 'value')!.set!.call(el, value);
+  await act(async () => {
+    el.dispatchEvent(new Event(el instanceof HTMLSelectElement ? 'change' : 'input', { bubbles: true }));
+  });
+}
+
 beforeEach(() => {
   (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
   localStorage.clear();
@@ -69,6 +84,30 @@ describe('FoodFormModal (RF-03)', () => {
 
     await act(async () => button('+3 días').click());
     expect(dates[0].value).toBe(dateInDays(3));
+  });
+
+  it('offers the five date shortcuts and starts with the cursor on the name (M1)', async () => {
+    await open(true);
+    for (const label of ['Hoy', '+3 días', '+1 semana', '+2 semanas', '+1 mes']) expect(button(label)).toBeTruthy();
+    expect(document.activeElement).toBe(field('name'));
+  });
+
+  it('"add another" keeps the form open, clears it and remembers unit and category (M1)', async () => {
+    await open(true);
+    await type(field('name'), 'Leche');
+    await type(field('unit'), 'l');
+    await act(async () => document.querySelector<HTMLInputElement>('input[type="radio"][value="lacteos"]')!.click());
+    await act(async () => button('Hoy').click());
+    await act(async () => document.querySelector<HTMLInputElement>('input[type="checkbox"]')!.click());
+    await act(async () => button('Agregar').click());
+
+    expect(addFood).toHaveBeenCalledWith(
+      expect.objectContaining({ name: 'Leche', unit: 'l', category: 'lacteos', expiresAt: dateInDays(0) })
+    );
+    expect(field('name').value).toBe('');
+    expect(field('unit').value).toBe('l');
+    expect(document.querySelector<HTMLInputElement>('input[type="radio"]:checked')!.value).toBe('lacteos');
+    expect(document.activeElement).toBe(field('name'));
   });
 
   it('has no duplicated ids, so every label points at its own field', async () => {

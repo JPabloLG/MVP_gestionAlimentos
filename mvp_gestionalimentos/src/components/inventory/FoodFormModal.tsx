@@ -1,6 +1,13 @@
 "use client";
 
-import React, { useEffect, useState } from "react";
+/**
+ * Create / edit form for a food (RF-03, RF-05).
+ *
+ * Built for fast entry, because rigid data entry is why inventory apps get
+ * abandoned: date shortcuts, remembered unit and category, focus on the name
+ * and an "add another" mode that keeps the form open.
+ */
+import React, { useEffect, useId, useState } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { foodSchema, FoodFormData, foodCategories, units } from "@/lib/validation/food";
@@ -10,10 +17,13 @@ import { Input } from "@/components/ui/Input";
 import { Select } from "@/components/ui/Select";
 import { Button } from "@/components/ui/Button";
 import { useFoods } from "@/hooks/useFoods";
+import { useAuth } from "@/hooks/useAuth";
 import { useToast } from "@/context/ToastProvider";
 import { categoryMeta } from "@/data/categories";
 import { FoodItem } from "@/types";
 import { useIsDesktop } from "@/hooks/useIsDesktop";
+import { dateInDays } from "@/lib/expiry";
+import { FormPrefs, getFormPrefs, saveFormPrefs } from "@/lib/preferences";
 
 interface FoodFormModalProps {
   isOpen: boolean;
@@ -22,11 +32,36 @@ interface FoodFormModalProps {
   onSuccess?: () => void;
 }
 
+const DATE_SHORTCUTS = [
+  { label: "Hoy", days: 0 },
+  { label: "+3 días", days: 3 },
+  { label: "+1 semana", days: 7 },
+  { label: "+2 semanas", days: 14 },
+  { label: "+1 mes", days: 30 },
+];
+
+function blankValues(prefs: FormPrefs): FoodFormData {
+  return { name: "", quantity: 1, unit: prefs.unit, category: prefs.category, expiresAt: "", notes: "" };
+}
+
+function toFormValues(food: FoodItem): FoodFormData {
+  return {
+    name: food.name,
+    quantity: food.quantity,
+    unit: food.unit,
+    category: food.category,
+    expiresAt: food.expiresAt,
+    notes: food.notes || "",
+  };
+}
+
 export function FoodFormModal({ isOpen, onClose, editFood, onSuccess }: FoodFormModalProps) {
   const { addFood, updateFood } = useFoods();
+  const { user } = useAuth();
   const { showToast } = useToast();
   const isDesktop = useIsDesktop();
   const [showAddAnother, setShowAddAnother] = useState(false);
+  const userId = user?.id;
 
   const {
     register,
@@ -36,93 +71,52 @@ export function FoodFormModal({ isOpen, onClose, editFood, onSuccess }: FoodForm
     formState: { errors, isSubmitting },
   } = useForm<FoodFormData>({
     resolver: zodResolver(foodSchema),
-    defaultValues: {
-      name: "",
-      quantity: 1,
-      unit: "unidades",
-      category: "otros",
-      expiresAt: "",
-      notes: "",
-    },
+    defaultValues: blankValues(getFormPrefs(undefined)),
   });
 
-  useEffect(() => {
-    if (editFood) {
-      setValue("name", editFood.name);
-      setValue("quantity", editFood.quantity);
-      setValue("unit", editFood.unit);
-      setValue("category", editFood.category);
-      setValue("expiresAt", editFood.expiresAt);
-      setValue("notes", editFood.notes || "");
-    } else {
-      reset({
-        name: "",
-        quantity: 1,
-        unit: "unidades",
-        category: "otros",
-        expiresAt: "",
-        notes: "",
-      });
-    }
-  }, [editFood, isOpen, setValue, reset]);
+  const formId = useId();
+  // Focus through the DOM: `reset` drops React Hook Form's field refs until the next render.
+  const focusName = () =>
+    document.getElementById(formId)?.querySelector<HTMLInputElement>('[name="name"]')?.focus();
 
-  const addDays = (days: number) => {
-    const d = new Date();
-    d.setDate(d.getDate() + days);
-    const yyyy = d.getFullYear();
-    const mm = String(d.getMonth() + 1).padStart(2, "0");
-    const dd = String(d.getDate()).padStart(2, "0");
-    setValue("expiresAt", `${yyyy}-${mm}-${dd}`);
-  };
+  // Every time the form opens: load the food being edited or a blank form with
+  // the remembered unit/category, and put the cursor on the name.
+  useEffect(() => {
+    if (!isOpen) return;
+    reset(editFood ? toFormValues(editFood) : blankValues(getFormPrefs(userId)));
+    document.getElementById(formId)?.querySelector<HTMLInputElement>('[name="name"]')?.focus();
+  }, [isOpen, editFood, userId, reset, formId]);
 
   const onSubmit = async (data: FoodFormData) => {
-    try {
-      if (editFood) {
-        const saved = await updateFood({
-          ...editFood,
-          name: data.name.trim(),
-          quantity: Number(data.quantity),
-          unit: data.unit,
-          category: data.category,
-          expiresAt: data.expiresAt,
-          notes: data.notes?.trim() || "",
-        });
-        if (!saved) return;
-        showToast("Alimento actualizado");
-        onClose();
+    const values = {
+      name: data.name,
+      quantity: Number(data.quantity),
+      unit: data.unit,
+      category: data.category,
+      expiresAt: data.expiresAt,
+      notes: data.notes?.trim() || "",
+    };
+    if (editFood) {
+      if (!(await updateFood({ ...editFood, ...values }))) return;
+      showToast("Alimento actualizado");
+      onClose();
+    } else {
+      if (!(await addFood(values))) return;
+      showToast("Alimento agregado");
+      const prefs = { unit: values.unit, category: values.category };
+      saveFormPrefs(userId, prefs);
+      if (showAddAnother) {
+        reset(blankValues(prefs));
+        focusName();
       } else {
-        const saved = await addFood({
-          name: data.name.trim(),
-          quantity: Number(data.quantity),
-          unit: data.unit,
-          category: data.category,
-          expiresAt: data.expiresAt,
-          notes: data.notes?.trim() || "",
-        });
-        if (!saved) return;
-        showToast("Alimento agregado");
-        if (showAddAnother) {
-          reset({
-            name: "",
-            quantity: 1,
-            unit: "unidades",
-            category: "otros",
-            expiresAt: "",
-            notes: "",
-          });
-          setShowAddAnother(false);
-        } else {
-          onClose();
-        }
+        onClose();
       }
-      if (onSuccess) onSuccess();
-    } catch (e) {
-      showToast(e instanceof Error && e.message ? e.message : "Error al guardar", "error");
     }
+    if (onSuccess) onSuccess();
   };
 
   const formContent = (
-    <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
+    <form id={formId} onSubmit={handleSubmit(onSubmit)} className="space-y-4">
       <Input label="Nombre" {...register("name")} error={errors.name?.message} />
       <div className="grid grid-cols-2 gap-3">
         <Input
@@ -164,15 +158,17 @@ export function FoodFormModal({ isOpen, onClose, editFood, onSuccess }: FoodForm
           error={errors.expiresAt?.message}
         />
         <div className="flex gap-2 mt-2 flex-wrap">
-          <Button type="button" variant="secondary" size="sm" onClick={() => addDays(3)}>
-            +3 días
-          </Button>
-          <Button type="button" variant="secondary" size="sm" onClick={() => addDays(7)}>
-            +1 semana
-          </Button>
-          <Button type="button" variant="secondary" size="sm" onClick={() => addDays(30)}>
-            +1 mes
-          </Button>
+          {DATE_SHORTCUTS.map((shortcut) => (
+            <Button
+              key={shortcut.label}
+              type="button"
+              variant="secondary"
+              size="sm"
+              onClick={() => setValue("expiresAt", dateInDays(shortcut.days), { shouldValidate: true })}
+            >
+              {shortcut.label}
+            </Button>
+          ))}
         </div>
         <p className="text-xs text-ink-muted mt-1">Puedes registrar fechas pasadas si ya está vencido.</p>
       </div>
