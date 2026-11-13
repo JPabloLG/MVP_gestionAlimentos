@@ -140,6 +140,17 @@ describe('recommendRecipes', () => {
     expect(analysis.usedFoods.map((u) => u.foodName)).toEqual(['Leche']);
   });
 
+  it('ranks every rescue recipe above fresh-only recipes, even with a lower score (RN-06)', () => {
+    const foods = [food('Tomate', 0), food('Yogurt', 30), food('Papa', 30), food('Leche', 30)];
+    const recs = recommendRecipes(foods, recipes, today);
+    const firstNonRescue = recs.findIndex((r) => r.section !== 'rescue');
+    expect(recs[0].section).toBe('rescue');
+    expect(recs.slice(firstNonRescue).every((r) => r.section === 'withwhatyouhave')).toBe(true);
+    // The audit case: these two used to open the list with scores 12 and 11.
+    const best = Math.max(...recs.filter((r) => r.section === 'withwhatyouhave').map((r) => r.score));
+    expect(best).toBeGreaterThan(recs[0].score);
+  });
+
   it('is deterministic: ties keep catalog order', () => {
     const catalog = [recipe('a', ['arroz']), recipe('b', ['arroz'])];
     const run = () => recommendRecipes([food('Arroz', 30)], catalog, today).map((r) => r.id);

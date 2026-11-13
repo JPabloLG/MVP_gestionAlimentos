@@ -170,7 +170,7 @@ export function analyzeRecipe(recipe: Recipe, foods: FoodItem[], today: Date = n
  * - "rescue": uses at least one critical or soon food (RN-06).
  * - "withwhatyouhave": covers at least 60 % of the required ingredients.
  * Recipes without required ingredients are skipped.
- * Sorted by score, highest first; ties keep catalog order.
+ * Sorted with every "rescue" recipe first, then by score; ties keep catalog order.
  */
 export function recommendRecipes(
   foods: FoodItem[],
@@ -188,5 +188,9 @@ export function recommendRecipes(
     else if (analysis.coverage >= 0.6) results.push({ ...analysis, section: "withwhatyouhave" });
   }
 
-  return results.sort((a, b) => b.score - a.score);
+  // RN-06: a recipe that rescues something always outranks one that does not,
+  // whatever the coverage bonus says. Scores only order recipes within a section.
+  return results.sort(
+    (a, b) => Number(b.section === "rescue") - Number(a.section === "rescue") || b.score - a.score
+  );
 }
