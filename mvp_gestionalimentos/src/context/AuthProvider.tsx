@@ -29,7 +29,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           const u = await authRepo.getUserById(sess.userId);
           setUser(u);
         }
-      } catch (e) {
+      } catch {
         // ignore
       } finally {
         setIsLoading(false);

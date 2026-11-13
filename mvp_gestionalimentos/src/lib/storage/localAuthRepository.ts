@@ -50,6 +50,11 @@ async function hashPassword(password: string, saltHex?: string): Promise<{ hash:
   return { hash: toHex(derivedBits), salt: toHex(salt.buffer as ArrayBuffer) };
 }
 
+/** Strips the credential fields so they never leave the repository. */
+function toPublicUser({ id, name, email, createdAt }: StoredUser): User {
+  return { id, name, email, createdAt };
+}
+
 export class LocalAuthRepository implements AuthRepository {
   private readUsers(): StoredUser[] {
     if (typeof window === "undefined") return [];
@@ -91,8 +96,7 @@ export class LocalAuthRepository implements AuthRepository {
         JSON.stringify({ rescued: 0, wasted: 0 })
       );
     }
-    const { passwordHash: _ph, salt: _s, ...publicUser } = user;
-    return publicUser as User;
+    return toPublicUser(user);
   }
 
   async login(email: string, password: string): Promise<Session> {
@@ -128,8 +132,7 @@ export class LocalAuthRepository implements AuthRepository {
     const users = this.readUsers();
     const user = users.find((u) => u.id === userId);
     if (!user) return null;
-    const { passwordHash: _ph, salt: _s, ...publicUser } = user;
-    return publicUser as User;
+    return toPublicUser(user);
   }
 
   async logout(): Promise<void> {

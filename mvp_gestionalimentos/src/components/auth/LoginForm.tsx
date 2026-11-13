@@ -27,8 +27,8 @@ export function LoginForm() {
     try {
       await login(data.email, data.password);
       router.push("/dashboard");
-    } catch (e: any) {
-      setError(e.message || "Error al iniciar sesión");
+    } catch (e) {
+      setError(e instanceof Error && e.message ? e.message : "Error al iniciar sesión");
     }
   };
 

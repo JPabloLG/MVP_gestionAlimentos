@@ -1,4 +1,4 @@
-import { ExpiryStatus, FoodItem } from "@/types";
+import { FoodItem } from "@/types";
 import { getDaysRemaining, getExpiryStatus } from "./expiry";
 
 export interface StatsSummary {

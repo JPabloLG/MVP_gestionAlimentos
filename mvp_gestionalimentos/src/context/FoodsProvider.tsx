@@ -24,7 +24,7 @@ const FoodsContext = createContext<FoodsContextType | undefined>(undefined);
 const localRepo = foodRepo as LocalFoodRepository;
 
 export function FoodsProvider({ children }: { children: React.ReactNode }) {
-  const { user, session } = useAuth();
+  const { user } = useAuth();
   const [foods, setFoods] = useState<FoodItem[]>([]);
   const [stats, setStats] = useState<UserStats>({ rescued: 0, wasted: 0 });
   const [isLoading, setIsLoading] = useState(true);

@@ -34,7 +34,7 @@ export default function TerminosPage() {
             <h2 className="text-xl font-semibold mb-2">4) Responsabilidad</h2>
             <p>
               Esta es una versión MVP/prototipo académico de la Universidad del Quindío, se ofrece
-              "tal cual" sin garantías de ningún tipo.
+              &quot;tal cual&quot; sin garantías de ningún tipo.
             </p>
           </section>
           <section>

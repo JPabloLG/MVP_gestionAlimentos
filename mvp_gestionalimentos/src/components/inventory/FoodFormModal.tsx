@@ -112,8 +112,8 @@ export function FoodFormModal({ isOpen, onClose, editFood, onSuccess }: FoodForm
         }
       }
       if (onSuccess) onSuccess();
-    } catch (e: any) {
-      showToast(e.message || "Error al guardar", "error");
+    } catch (e) {
+      showToast(e instanceof Error && e.message ? e.message : "Error al guardar", "error");
     }
   };
 

@@ -5,7 +5,6 @@ import { Card } from "@/components/ui/Card";
 import { useFoods } from "@/hooks/useFoods";
 import { sortByPriority } from "@/lib/expiry";
 import { ExpiryBadge } from "@/components/inventory/ExpiryBadge";
-import { Button } from "@/components/ui/Button";
 import Link from "next/link";
 import { categoryMeta } from "@/data/categories";
 
