@@ -31,7 +31,14 @@ export function FoodCard({ food }: { food: FoodItem }) {
                 </p>
               </div>
             </div>
-            <ExpiryBadge expiresAt={food.expiresAt} />
+            <div className="flex flex-col items-end gap-1">
+              <ExpiryBadge expiresAt={food.expiresAt} />
+              {food.expiryIsEstimated && (
+                <span className="text-xs text-ink-muted" title="Fecha sugerida según la categoría, no leída de una etiqueta">
+                  ≈ estimada
+                </span>
+              )}
+            </div>
           </div>
           {food.notes && <p className="text-sm text-ink-muted mb-3">{food.notes}</p>}
           <div className="flex flex-wrap gap-2">

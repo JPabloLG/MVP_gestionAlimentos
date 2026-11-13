@@ -110,6 +110,23 @@ describe('FoodFormModal (RF-03)', () => {
     expect(document.activeElement).toBe(field('name'));
   });
 
+  it('suggests an estimated date by category and saves it flagged; typing a date clears the flag (M2)', async () => {
+    await open(true);
+    await type(field('name'), 'Pollo');
+    await act(async () => document.querySelector<HTMLInputElement>('input[type="radio"][value="carnes"]')!.click());
+    await act(async () => button('No sé la fecha: sugerir según la categoría').click());
+    expect(field('expiresAt').value).toBe(dateInDays(2));
+    expect(document.body.textContent).toContain('Fecha estimada');
+
+    await act(async () => button('Agregar').click());
+    expect(addFood).toHaveBeenLastCalledWith(expect.objectContaining({ expiresAt: dateInDays(2), expiryIsEstimated: true }));
+
+    await open(true);
+    await act(async () => button('No sé la fecha: sugerir según la categoría').click());
+    await type(field('expiresAt'), dateInDays(9));
+    expect(document.body.textContent).not.toContain('Fecha estimada');
+  });
+
   it('has no duplicated ids, so every label points at its own field', async () => {
     await open(true);
     const ids = Array.from(document.querySelectorAll('[id]')).map((el) => el.id);

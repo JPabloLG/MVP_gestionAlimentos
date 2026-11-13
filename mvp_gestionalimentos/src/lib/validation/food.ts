@@ -36,6 +36,7 @@ export const foodSchema = z.object({
     .min(1, "Selecciona una fecha de vencimiento")
     .refine(isValidDateString, "La fecha no es válida"),
   notes: z.string().max(120, "Máximo 120 caracteres").optional().or(z.literal("")),
+  expiryIsEstimated: z.boolean().optional(),
 });
 
 export type FoodFormData = z.infer<typeof foodSchema>;

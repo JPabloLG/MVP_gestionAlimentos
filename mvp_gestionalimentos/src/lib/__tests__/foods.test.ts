@@ -1,5 +1,7 @@
 import { describe, it, expect } from 'vitest';
-import { buildDemoFoods, missingDemoFoods } from '../foods';
+import { buildDemoFoods, missingDemoFoods, suggestExpiryDate } from '../foods';
+import { estimatedShelfLifeDays } from '@/data/shelfLife';
+import { foodCategories } from '../validation/food';
 import { getDaysRemaining, getExpiryStatus } from '../expiry';
 import { foodSchema } from '../validation/food';
 import { FoodItem, NewFood } from '@/types';
@@ -35,5 +37,20 @@ describe('demo foods', () => {
     const names = missingDemoFoods(mine, today).map((f) => f.name);
     expect(names).not.toContain('Tomate');
     expect(names).toHaveLength(10);
+  });
+});
+
+describe('estimated spoilage date (M2, RF-03)', () => {
+  it('suggests a future date for every category', () => {
+    for (const category of foodCategories) {
+      const days = getDaysRemaining(suggestExpiryDate(category, today), today);
+      expect(days).toBe(estimatedShelfLifeDays[category]);
+      expect(days).toBeGreaterThan(0);
+    }
+  });
+
+  it('perishables get shorter estimates than pantry items', () => {
+    expect(estimatedShelfLifeDays.carnes).toBeLessThan(estimatedShelfLifeDays.lacteos);
+    expect(estimatedShelfLifeDays.frutas).toBeLessThan(estimatedShelfLifeDays.despensa);
   });
 });

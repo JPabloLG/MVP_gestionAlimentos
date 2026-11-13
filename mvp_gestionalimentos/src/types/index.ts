@@ -28,6 +28,8 @@ export interface FoodItem {
   category: FoodCategory;
   expiresAt: string; // "YYYY-MM-DD" (fecha local, NO ISO con hora)
   notes?: string; // opcional, máx. 120 caracteres
+  /** True when the date was suggested from the category instead of read from a label. Optional: older data lacks it. */
+  expiryIsEstimated?: boolean;
   createdAt: string; // ISO
   updatedAt: string; // ISO
 }

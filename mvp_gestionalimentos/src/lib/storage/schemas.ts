@@ -20,6 +20,7 @@ export const storedFoodSchema = z
     category: z.enum(foodCategories),
     expiresAt: z.string().refine(isValidDateString),
     notes: z.string().optional(),
+    expiryIsEstimated: z.boolean().optional(),
     createdAt: z.string(),
     updatedAt: z.string(),
   })

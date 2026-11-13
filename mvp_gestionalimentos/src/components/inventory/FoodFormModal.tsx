@@ -23,6 +23,7 @@ import { categoryMeta } from "@/data/categories";
 import { FoodItem } from "@/types";
 import { useIsDesktop } from "@/hooks/useIsDesktop";
 import { dateInDays } from "@/lib/expiry";
+import { suggestExpiryDate } from "@/lib/foods";
 import { FormPrefs, getFormPrefs, saveFormPrefs } from "@/lib/preferences";
 
 interface FoodFormModalProps {
@@ -41,7 +42,15 @@ const DATE_SHORTCUTS = [
 ];
 
 function blankValues(prefs: FormPrefs): FoodFormData {
-  return { name: "", quantity: 1, unit: prefs.unit, category: prefs.category, expiresAt: "", notes: "" };
+  return {
+    name: "",
+    quantity: 1,
+    unit: prefs.unit,
+    category: prefs.category,
+    expiresAt: "",
+    notes: "",
+    expiryIsEstimated: false,
+  };
 }
 
 function toFormValues(food: FoodItem): FoodFormData {
@@ -52,6 +61,7 @@ function toFormValues(food: FoodItem): FoodFormData {
     category: food.category,
     expiresAt: food.expiresAt,
     notes: food.notes || "",
+    expiryIsEstimated: food.expiryIsEstimated ?? false,
   };
 }
 
@@ -68,6 +78,8 @@ export function FoodFormModal({ isOpen, onClose, editFood, onSuccess }: FoodForm
     handleSubmit,
     reset,
     setValue,
+    getValues,
+    watch,
     formState: { errors, isSubmitting },
   } = useForm<FoodFormData>({
     resolver: zodResolver(foodSchema),
@@ -87,6 +99,12 @@ export function FoodFormModal({ isOpen, onClose, editFood, onSuccess }: FoodForm
     document.getElementById(formId)?.querySelector<HTMLInputElement>('[name="name"]')?.focus();
   }, [isOpen, editFood, userId, reset, formId]);
 
+  const isEstimated = watch("expiryIsEstimated");
+  const setDate = (date: string, estimated: boolean) => {
+    setValue("expiresAt", date, { shouldValidate: true });
+    setValue("expiryIsEstimated", estimated);
+  };
+
   const onSubmit = async (data: FoodFormData) => {
     const values = {
       name: data.name,
@@ -95,6 +113,8 @@ export function FoodFormModal({ isOpen, onClose, editFood, onSuccess }: FoodForm
       category: data.category,
       expiresAt: data.expiresAt,
       notes: data.notes?.trim() || "",
+      // Stored only when true so foods keep the same shape as before this field existed.
+      expiryIsEstimated: data.expiryIsEstimated || undefined,
     };
     if (editFood) {
       if (!(await updateFood({ ...editFood, ...values }))) return;
@@ -154,7 +174,7 @@ export function FoodFormModal({ isOpen, onClose, editFood, onSuccess }: FoodForm
         <Input
           label="Fecha de vencimiento o deterioro estimado"
           type="date"
-          {...register("expiresAt")}
+          {...register("expiresAt", { onChange: () => setValue("expiryIsEstimated", false) })}
           error={errors.expiresAt?.message}
         />
         <div className="flex gap-2 mt-2 flex-wrap">
@@ -164,12 +184,26 @@ export function FoodFormModal({ isOpen, onClose, editFood, onSuccess }: FoodForm
               type="button"
               variant="secondary"
               size="sm"
-              onClick={() => setValue("expiresAt", dateInDays(shortcut.days), { shouldValidate: true })}
+              onClick={() => setDate(dateInDays(shortcut.days), false)}
             >
               {shortcut.label}
             </Button>
           ))}
         </div>
+        <Button
+          type="button"
+          variant="ghost"
+          size="sm"
+          className="mt-2"
+          onClick={() => setDate(suggestExpiryDate(getValues("category")), true)}
+        >
+          No sé la fecha: sugerir según la categoría
+        </Button>
+        {isEstimated && (
+          <p className="text-xs text-ink mt-1">
+            ≈ Fecha estimada para esta categoría. Es orientativa: cámbiala si conoces la fecha real.
+          </p>
+        )}
         <p className="text-xs text-ink-muted mt-1">Puedes registrar fechas pasadas si ya está vencido.</p>
       </div>
       <Input label="Notas (opcional)" {...register("notes")} error={errors.notes?.message} />
