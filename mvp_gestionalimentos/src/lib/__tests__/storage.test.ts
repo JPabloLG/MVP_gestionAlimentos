@@ -100,6 +100,36 @@ describe('isolation between users (RN-01, RN-02)', () => {
   });
 });
 
+describe('settling foods counts exactly once', () => {
+  beforeEach(async () => {
+    await foods.addFood(food('a', 'ana'));
+    await foods.addFood(food('b', 'ana'));
+    await foods.addFood(food('c', 'ana'));
+  });
+
+  it('counts one rescued per consumed food and removes it', async () => {
+    expect(await foods.settleFoods('ana', ['a', 'b'], 'rescued')).toBe(2);
+    expect(foods.getStats('ana')).toEqual({ rescued: 2, wasted: 0 });
+    expect((await foods.getFoods('ana')).map((f) => f.id)).toEqual(['c']);
+  });
+
+  it('a double tap does not count twice', async () => {
+    const results = await Promise.all([
+      foods.settleFoods('ana', ['a'], 'wasted'),
+      foods.settleFoods('ana', ['a'], 'wasted'),
+    ]);
+    expect(results).toEqual([1, 0]);
+    expect(foods.getStats('ana')).toEqual({ rescued: 0, wasted: 1 });
+  });
+
+  it('ignores unknown ids and foods of other users', async () => {
+    await foods.addFood(food('z', 'beto'));
+    expect(await foods.settleFoods('ana', ['nope', 'z'], 'rescued')).toBe(0);
+    expect(foods.getStats('ana')).toEqual({ rescued: 0, wasted: 0 });
+    expect(await foods.getFoods('beto')).toHaveLength(1);
+  });
+});
+
 describe('safe reads (RNF-05)', () => {
   it('backs up a corrupt value instead of losing it, and reports it once', async () => {
     const listener = vi.fn();

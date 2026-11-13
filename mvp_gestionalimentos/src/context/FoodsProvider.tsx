@@ -26,6 +26,8 @@ interface FoodsContextType {
   deleteFood: (id: string) => Promise<boolean>;
   markConsumed: (id: string) => Promise<boolean>;
   markWasted: (id: string) => Promise<boolean>;
+  /** Removes several foods at once, counting each as rescued or wasted exactly once. */
+  settleFoods: (ids: string[], outcome: keyof UserStats) => Promise<boolean>;
   loadDemoFoods: () => Promise<boolean>;
   refresh: () => Promise<void>;
 }
@@ -101,19 +103,12 @@ export function FoodsProvider({ children }: { children: React.ReactNode }) {
 
   const deleteFood = (id: string) => mutate((ownerId) => localFoodRepo.deleteFood(id, ownerId));
 
-  const markConsumed = (id: string) =>
-    mutate(async (ownerId) => {
-      const current = localFoodRepo.getStats(ownerId);
-      localFoodRepo.updateStats(ownerId, { ...current, rescued: current.rescued + 1 });
-      await localFoodRepo.deleteFood(id, ownerId);
-    });
+  const settleFoods = (ids: string[], outcome: keyof UserStats) =>
+    mutate((ownerId) => localFoodRepo.settleFoods(ownerId, ids, outcome));
 
-  const markWasted = (id: string) =>
-    mutate(async (ownerId) => {
-      const current = localFoodRepo.getStats(ownerId);
-      localFoodRepo.updateStats(ownerId, { ...current, wasted: current.wasted + 1 });
-      await localFoodRepo.deleteFood(id, ownerId);
-    });
+  const markConsumed = (id: string) => settleFoods([id], "rescued");
+
+  const markWasted = (id: string) => settleFoods([id], "wasted");
 
   const loadDemoFoods = async () => {
     if (!user?.id) return false;
@@ -156,6 +151,7 @@ export function FoodsProvider({ children }: { children: React.ReactNode }) {
         deleteFood,
         markConsumed,
         markWasted,
+        settleFoods,
         loadDemoFoods,
         refresh: reload,
       }}

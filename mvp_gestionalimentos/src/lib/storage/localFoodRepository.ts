@@ -58,6 +58,25 @@ export class LocalFoodRepository implements FoodRepository {
     );
   }
 
+  /**
+   * Removes the given foods and counts each one as rescued (consumed) or wasted.
+   *
+   * Counting and removal happen in one synchronous step and only for foods that
+   * still exist, so a double tap or a stale id can never count twice.
+   * Returns how many foods were actually settled.
+   */
+  async settleFoods(userId: string, ids: string[], outcome: keyof UserStats): Promise<number> {
+    const foods = this.readFoods(userId);
+    const wanted = new Set(ids);
+    const remaining = foods.filter((f) => !wanted.has(f.id));
+    const settled = foods.length - remaining.length;
+    if (settled === 0) return 0;
+    this.saveFoods(userId, remaining);
+    const stats = this.getStats(userId);
+    this.updateStats(userId, { ...stats, [outcome]: stats[outcome] + settled });
+    return settled;
+  }
+
   getStats(userId: string): UserStats {
     return readJson(this.statsKey(userId), storedStatsSchema, { rescued: 0, wasted: 0 });
   }
