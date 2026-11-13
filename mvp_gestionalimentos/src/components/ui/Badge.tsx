@@ -18,7 +18,7 @@ export function Badge({ children, variant = "default", className = "" }: BadgePr
   };
   return (
     <span
-      className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium ${variants[variant]} ${className}`}
+      className={`inline-flex items-center gap-1 whitespace-nowrap rounded-full px-2 py-0.5 text-xs font-medium ${variants[variant]} ${className}`}
     >
       <span className="w-1.5 h-1.5 rounded-full bg-current" />
       {children}

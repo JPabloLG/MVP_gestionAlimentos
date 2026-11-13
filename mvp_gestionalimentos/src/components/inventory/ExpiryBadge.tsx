@@ -1,20 +1,22 @@
 "use client";
 
 import React from "react";
+import { Badge } from "@/components/ui/Badge";
 import { getDaysRemaining, getExpiryStatus, getExpiryLabel } from "@/lib/expiry";
-import { statusMeta } from "./statusMeta";
 
-/** Remaining-days pill: icon + text + color, so it reads without color vision (RN-03, RN-05). */
-export function ExpiryBadge({ expiresAt, className = "" }: { expiresAt: string; className?: string }) {
+export function ExpiryBadge({ expiresAt }: { expiresAt: string }) {
   const days = getDaysRemaining(expiresAt);
-  const meta = statusMeta[getExpiryStatus(days)];
-  const Icon = meta.icon;
+  const status = getExpiryStatus(days);
+  const label = getExpiryLabel(days);
+  const statusStyles = {
+    expired: "border border-red-200 bg-red-100 text-red-800",
+    critical: "border border-amber-200 bg-amber-100 text-amber-800",
+    soon: "border border-yellow-200 bg-yellow-100 text-yellow-800",
+    fresh: "border border-emerald-200 bg-emerald-100 text-emerald-800",
+  };
   return (
-    <span
-      className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-semibold whitespace-nowrap ${meta.soft} ${meta.text} ${className}`}
-    >
-      <Icon size={13} aria-hidden="true" />
-      {getExpiryLabel(days)}
-    </span>
+    <Badge variant={status} className={`whitespace-nowrap ${statusStyles[status]}`}>
+      {label}
+    </Badge>
   );
 }

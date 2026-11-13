@@ -18,7 +18,7 @@ export function Input({ label, error, className = "", id, ...props }: InputProps
       )}
       <input
         id={inputId}
-        className={`w-full rounded-xl border border-border bg-surface px-3 py-2.5 text-ink placeholder:text-ink-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40 min-h-[44px] ${error ? "border-expired" : ""} ${className}`}
+        className={`w-full rounded-xl border border-border bg-white/90 px-4 py-3 text-ink shadow-sm transition placeholder:text-ink-muted/70 hover:border-primary/30 focus-visible:outline-none focus-visible:border-primary focus-visible:ring-4 focus-visible:ring-primary/10 min-h-[48px] ${error ? "border-expired focus-visible:border-expired focus-visible:ring-expired/10" : ""} ${className}`}
         {...props}
       />
       {error && <p className="text-xs text-expired mt-1">{error}</p>}

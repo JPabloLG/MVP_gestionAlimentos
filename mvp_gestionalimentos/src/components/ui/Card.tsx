@@ -12,12 +12,11 @@ interface CardProps {
 
 export function Card({ children, className = "", animate = true }: CardProps) {
   const reduced = useReducedMotionSafe();
-  const still = reduced || !animate;
   return (
     <motion.div
-      className={`bg-surface rounded-2xl shadow-sm border border-border p-4 ${className}`}
-      whileHover={still ? undefined : { scale: 1.01 }}
-      transition={still ? undefined : { duration: 0.15 }}
+      className={`rounded-3xl border border-stone-200/80 bg-white p-5 shadow-sm transition-all hover:shadow-md ${className}`}
+      whileHover={reduced || !animate ? undefined : { y: -2 }}
+      transition={reduced || !animate ? undefined : { duration: 0.15 }}
     >
       {children}
     </motion.div>

@@ -28,8 +28,8 @@ export function RegisterForm() {
     try {
       await registerUser(data.name, data.email, data.password);
       router.push("/dashboard");
-    } catch (e) {
-      setError(e instanceof Error && e.message ? e.message : "Error al registrarse");
+    } catch (e: unknown) {
+      setError(e instanceof Error ? e.message : "Error al registrarse");
     }
   };
 
@@ -49,13 +49,6 @@ export function RegisterForm() {
         autoComplete="new-password"
         {...register("password")}
         error={errors.password?.message}
-      />
-      <Input
-        label="Confirmar contraseña"
-        type="password"
-        autoComplete="new-password"
-        {...register("confirmPassword")}
-        error={errors.confirmPassword?.message}
       />
       <div>
         <label className="flex items-start gap-2 text-sm">

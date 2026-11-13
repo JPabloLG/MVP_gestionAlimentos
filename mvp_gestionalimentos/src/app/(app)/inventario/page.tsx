@@ -1,170 +1,234 @@
 "use client";
 
 import React, { useMemo, useState } from "react";
-import Image from "next/image";
 import { useFoods } from "@/hooks/useFoods";
 import { FoodCard } from "@/components/inventory/FoodCard";
 import { EmptyState } from "@/components/ui/EmptyState";
 import { Button } from "@/components/ui/Button";
+import { Input } from "@/components/ui/Input";
 import { FoodFormModal } from "@/components/inventory/FoodFormModal";
-import { statusMeta, statusOrder } from "@/components/inventory/statusMeta";
-import { Plus, Search } from "lucide-react";
-import { getDaysRemaining, getExpiryStatus, sortByPriority } from "@/lib/expiry";
-import { foldText } from "@/lib/format";
+import { Plus } from "lucide-react";
+import { sortByPriority } from "@/lib/expiry";
 import { categoriesList, categoryMeta } from "@/data/categories";
-import { ExpiryStatus, FoodCategory } from "@/types";
+import { getExpiryStatus, getDaysRemaining } from "@/lib/expiry";
+import { Package, Search, Sparkles } from "lucide-react";
+import { ChevronLeft, ChevronRight } from "lucide-react";
+import { groupIdenticalFoods } from "@/lib/inventory";
 
-const chip = "shrink-0 inline-flex items-center gap-1.5 px-3 min-h-[40px] rounded-full text-sm border transition";
-const chipOff = "border-border bg-surface hover:bg-surface-muted";
+const PAGE_SIZE = 12;
 
-/** Full inventory (RF-04) with search, filters and sorting; most urgent first by default (RF-08). */
 export default function InventarioPage() {
   const { foods, loadDemoFoods } = useFoods();
   const [search, setSearch] = useState("");
-  const [categoryFilter, setCategoryFilter] = useState<FoodCategory | "all">("all");
-  const [statusFilter, setStatusFilter] = useState<ExpiryStatus | "all">("all");
-  const [sortBy, setSortBy] = useState<"priority" | "name" | "recent">("priority");
+  const [categoryFilter, setCategoryFilter] = useState<string>("all");
+  const [statusFilter, setStatusFilter] = useState<string>("all");
+  const [sortBy, setSortBy] = useState<string>("priority");
+  const [currentPage, setCurrentPage] = useState(1);
   const [isFormOpen, setIsFormOpen] = useState(false);
 
-  const filtered = useMemo(() => {
-    const query = foldText(search);
-    let list = foods.filter((f) => foldText(f.name).includes(query));
-    if (categoryFilter !== "all") list = list.filter((f) => f.category === categoryFilter);
-    if (statusFilter !== "all") list = list.filter((f) => getExpiryStatus(getDaysRemaining(f.expiresAt)) === statusFilter);
-    if (sortBy === "priority") return sortByPriority(list);
-    if (sortBy === "name") return [...list].sort((a, b) => a.name.localeCompare(b.name, "es"));
-    return [...list].sort((a, b) => b.createdAt.localeCompare(a.createdAt));
+  const groups = useMemo(() => {
+    let filtered = foods.filter((food) =>
+      food.name.toLocaleLowerCase("es").includes(search.toLocaleLowerCase("es"))
+    );
+    if (categoryFilter !== "all") {
+      filtered = filtered.filter((food) => food.category === categoryFilter);
+    }
+    if (statusFilter !== "all") {
+      filtered = filtered.filter((food) =>
+        getExpiryStatus(getDaysRemaining(food.expiresAt)) === statusFilter
+      );
+    }
+    if (sortBy === "priority") {
+      filtered = sortByPriority(filtered);
+    } else if (sortBy === "name") {
+      filtered = [...filtered].sort((a, b) => a.name.localeCompare(b.name, "es"));
+    } else if (sortBy === "recent") {
+      filtered = [...filtered].sort(
+        (a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+      );
+    }
+
+    return groupIdenticalFoods(filtered);
   }, [foods, search, categoryFilter, statusFilter, sortBy]);
 
-  const clearFilters = () => {
-    setSearch("");
-    setCategoryFilter("all");
-    setStatusFilter("all");
+  const totalPages = Math.max(1, Math.ceil(groups.length / PAGE_SIZE));
+  const safePage = Math.min(currentPage, totalPages);
+  const pageGroups = groups.slice((safePage - 1) * PAGE_SIZE, safePage * PAGE_SIZE);
+  const updateFilter = (update: () => void) => {
+    update();
+    setCurrentPage(1);
   };
 
   return (
-    <div className="space-y-5">
-      <div className="flex items-center justify-between gap-3 flex-wrap">
-        <div>
-          <h1 className="text-2xl md:text-3xl font-display">Inventario</h1>
-          <p className="text-sm text-ink-muted">
-            {foods.length} {foods.length === 1 ? "alimento registrado" : "alimentos registrados"}
-          </p>
-        </div>
-        <Button onClick={() => setIsFormOpen(true)} className="hidden sm:inline-flex">
-          <Plus size={18} aria-hidden="true" />
+    <div className="space-y-7">
+      <section className="relative isolate overflow-hidden rounded-[2rem] bg-[#E3F2EA] px-6 py-7 sm:px-9 sm:py-9">
+        <div className="pointer-events-none absolute -right-12 -top-24 -z-10 h-72 w-72 rounded-full border border-primary/10" />
+        <div className="pointer-events-none absolute -bottom-32 right-20 -z-10 h-64 w-64 rounded-full bg-white/70 blur-3xl" />
+        <div className="flex flex-col justify-between gap-5 sm:flex-row sm:items-end">
+          <div>
+            <span className="mb-3 inline-flex items-center gap-2 text-xs font-bold uppercase tracking-[0.16em] text-primary"><Package size={14} /> TU COCINA, EN ORDEN</span>
+            <h1 className="text-3xl font-semibold tracking-tight sm:text-4xl">Tu inventario</h1>
+            <p className="mt-2 text-sm text-ink-muted">
+              {foods.length ? `${foods.length} registros · agrupados por producto · lo urgente primero` : "Ten a la vista lo que tienes y úsalo antes de que se pierda."}
+            </p>
+          </div>
+          <Button onClick={() => setIsFormOpen(true)}>
+          <Plus size={18} />
           Agregar alimento
-        </Button>
-      </div>
+          </Button>
+        </div>
+      </section>
 
-      {foods.length > 0 && (
-        <div className="bg-surface rounded-2xl border border-border shadow-sm p-3 sm:p-4 space-y-3">
-          <div className="flex flex-col sm:flex-row gap-2">
-            <label className="relative flex-1">
-              <span className="sr-only">Buscar por nombre</span>
-              <Search size={18} className="absolute left-3 top-1/2 -translate-y-1/2 text-ink-muted" aria-hidden="true" />
-              <input
-                type="search"
-                value={search}
-                onChange={(e) => setSearch(e.target.value)}
-                placeholder="Buscar por nombre..."
-                className="w-full rounded-xl border border-border bg-background pl-10 pr-3 min-h-[44px] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40"
-              />
-            </label>
-            <label className="flex items-center gap-2 text-sm">
-              <span className="text-ink-muted shrink-0">Ordenar por</span>
-              <select
-                value={sortBy}
-                onChange={(e) => setSortBy(e.target.value as typeof sortBy)}
-                className="flex-1 sm:flex-none rounded-xl border border-border bg-background px-3 min-h-[44px] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40"
-              >
-                <option value="priority">Más urgentes</option>
-                <option value="name">Nombre</option>
-                <option value="recent">Recientes</option>
-              </select>
-            </label>
-          </div>
-
-          {/* Status chips: same icon + color as the badges (Gestalt: similarity) */}
-          <div role="group" aria-label="Filtrar por estado" className="flex gap-2 overflow-x-auto no-scrollbar -mx-3 px-3 sm:mx-0 sm:px-0 sm:flex-wrap">
+      <section className="space-y-4 rounded-3xl border border-border/70 bg-white p-4 shadow-sm sm:p-5">
+        <div className="relative">
+          <Search size={18} className="absolute left-4 top-1/2 -translate-y-1/2 text-ink-muted" />
+          <Input
+            aria-label="Buscar alimentos"
+            placeholder="Buscar en tu inventario..."
+            value={search}
+            onChange={(e) => updateFilter(() => setSearch(e.target.value))}
+            className="pl-11"
+          />
+        </div>
+        <div>
+          <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-ink-muted">Categorías</p>
+          <div className="flex flex-wrap gap-2">
+          <button
+            onClick={() => updateFilter(() => setCategoryFilter("all"))}
+            className={`rounded-full border px-3 py-2 text-sm transition ${
+              categoryFilter === "all" ? "bg-primary text-white border-primary" : "border-border bg-white text-ink-muted hover:border-primary/40"
+            }`}
+          >
+            Todas
+          </button>
+          {categoriesList.map((cat) => (
             <button
-              aria-pressed={statusFilter === "all"}
-              onClick={() => setStatusFilter("all")}
-              className={`${chip} ${statusFilter === "all" ? "bg-ink text-white border-ink" : chipOff}`}
+              key={cat}
+              onClick={() => updateFilter(() => setCategoryFilter(cat))}
+              className={`rounded-full border px-3 py-2 text-sm transition ${
+                categoryFilter === cat ? "bg-primary text-white border-primary" : "border-border bg-white text-ink-muted hover:border-primary/40"
+              }`}
             >
-              Todos
+              {categoryMeta[cat].emoji} {categoryMeta[cat].label}
             </button>
-            {statusOrder.map((s) => {
-              const meta = statusMeta[s];
-              const Icon = meta.icon;
-              const on = statusFilter === s;
-              return (
-                <button
-                  key={s}
-                  aria-pressed={on}
-                  onClick={() => setStatusFilter(on ? "all" : s)}
-                  className={`${chip} ${on ? `${meta.soft} ${meta.text} border-current font-semibold` : chipOff}`}
-                >
-                  <Icon size={15} aria-hidden="true" className={on ? "" : meta.text} />
-                  {meta.label}
-                </button>
-              );
-            })}
-          </div>
-
-          <div role="group" aria-label="Filtrar por categoría" className="flex gap-2 overflow-x-auto no-scrollbar -mx-3 px-3 sm:mx-0 sm:px-0 sm:flex-wrap">
-            <button
-              aria-pressed={categoryFilter === "all"}
-              onClick={() => setCategoryFilter("all")}
-              className={`${chip} ${categoryFilter === "all" ? "bg-primary text-white border-primary" : chipOff}`}
-            >
-              Todas
-            </button>
-            {categoriesList.map((cat) => (
-              <button
-                key={cat}
-                aria-pressed={categoryFilter === cat}
-                onClick={() => setCategoryFilter(categoryFilter === cat ? "all" : cat)}
-                className={`${chip} ${categoryFilter === cat ? "bg-primary text-white border-primary" : chipOff}`}
-              >
-                <span aria-hidden="true">{categoryMeta[cat].emoji}</span> {categoryMeta[cat].label}
-              </button>
-            ))}
+          ))}
           </div>
         </div>
-      )}
+        <div>
+          <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-ink-muted">Estado</p>
+          <div className="flex flex-wrap gap-2">
+          <button
+            onClick={() => updateFilter(() => setStatusFilter("all"))}
+            className={`rounded-full border px-3 py-2 text-sm transition ${
+              statusFilter === "all" ? "bg-primary text-white border-primary" : "border-border bg-white text-ink-muted hover:border-primary/40"
+            }`}
+          >
+            Todos
+          </button>
+          <button
+            onClick={() => updateFilter(() => setStatusFilter("expired"))}
+            className={`rounded-full border px-3 py-2 text-sm transition ${
+              statusFilter === "expired" ? "bg-expired text-white border-expired" : "border-border bg-white text-ink-muted hover:border-expired/50"
+            }`}
+          >
+            Vencidos
+          </button>
+          <button
+            onClick={() => updateFilter(() => setStatusFilter("critical"))}
+            className={`rounded-full border px-3 py-2 text-sm transition ${
+              statusFilter === "critical" ? "bg-critical text-white border-critical" : "border-border bg-white text-ink-muted hover:border-critical/50"
+            }`}
+          >
+            Úsalo ya
+          </button>
+          <button
+            onClick={() => updateFilter(() => setStatusFilter("soon"))}
+            className={`rounded-full border px-3 py-2 text-sm transition ${
+              statusFilter === "soon" ? "bg-soon text-white border-soon" : "border-border bg-white text-ink-muted hover:border-soon/50"
+            }`}
+          >
+            Pronto
+          </button>
+          <button
+            onClick={() => updateFilter(() => setStatusFilter("fresh"))}
+            className={`rounded-full border px-3 py-2 text-sm transition ${
+              statusFilter === "fresh" ? "bg-fresh text-white border-fresh" : "border-border bg-white text-ink-muted hover:border-fresh/50"
+            }`}
+          >
+            Fresco
+          </button>
+          </div>
+        </div>
+        <div className="flex flex-wrap items-center justify-between gap-3 border-t border-border/70 pt-3">
+          <p className="text-sm text-ink-muted">
+            {groups.length} {groups.length === 1 ? "grupo" : "grupos"} · {foods.length} registros
+          </p>
+          <label className="flex items-center gap-2 text-sm text-ink-muted">
+            Ordenar
+            <select
+          value={sortBy}
+          onChange={(e) => updateFilter(() => setSortBy(e.target.value))}
+          className="min-h-10 rounded-xl border border-border bg-white px-3 py-2 text-sm font-medium text-ink focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/30"
+        >
+          <option value="priority">Más urgentes</option>
+          <option value="name">Nombre</option>
+          <option value="recent">Recientes</option>
+        </select>
+          </label>
+        </div>
+      </section>
 
       {foods.length === 0 ? (
-        <div className="text-center bg-surface rounded-3xl border border-border p-6 sm:p-10">
-          <Image src="/illustrations/fridge.svg" alt="" width={320} height={300} priority className="mx-auto w-48 sm:w-60 h-auto mb-4" />
-          <h2 className="text-xl font-semibold mb-2">Tu inventario está vacío</h2>
-          <p className="text-ink-muted mb-6 max-w-md mx-auto">
-            Agrega lo que tienes en la nevera o la despensa y te avisaremos qué usar primero.
-          </p>
-          <div className="flex flex-col sm:flex-row gap-2 justify-center">
-            <Button onClick={() => setIsFormOpen(true)}>
-              <Plus size={18} aria-hidden="true" />
-              Agregar alimento
-            </Button>
+        <EmptyState
+          emoji="🛒"
+          title="La nevera está esperando"
+          description="Agrega tus alimentos para recibir alertas de vencimiento y recetas hechas para lo que ya tienes."
+          actionLabel="Agregar alimento"
+          onAction={() => setIsFormOpen(true)}
+        >
+          <div className="mt-5">
             <Button variant="secondary" onClick={loadDemoFoods}>
-              Cargar alimentos de ejemplo
+              <Sparkles size={16} /> Cargar inventario de prueba
             </Button>
           </div>
-        </div>
-      ) : filtered.length === 0 ? (
+        </EmptyState>
+      ) : groups.length === 0 ? (
         <EmptyState
-          emoji="🔍"
-          title="Sin resultados"
-          description="Ningún alimento coincide con la búsqueda o los filtros."
-          actionLabel="Limpiar filtros"
-          onAction={clearFilters}
+          emoji="🔎"
+          title="No encontramos alimentos"
+          description="Prueba con otro nombre o cambia los filtros para ver más resultados."
         />
       ) : (
-        <div className="grid grid-cols-1 min-[560px]:grid-cols-2 lg:grid-cols-3 gap-4">
-          {filtered.map((food) => (
-            <FoodCard key={food.id} food={food} />
+        <>
+        <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
+          {pageGroups.map((group) => (
+            <FoodCard key={group.key} foods={group.foods} />
           ))}
         </div>
+        {totalPages > 1 && (
+          <nav aria-label="Paginación del inventario" className="flex flex-wrap items-center justify-center gap-2 pt-2">
+            <button
+              type="button"
+              onClick={() => setCurrentPage((page) => Math.max(1, page - 1))}
+              disabled={safePage === 1}
+              className="inline-flex h-10 items-center gap-1 rounded-xl border border-border bg-white px-3 text-sm font-medium text-ink transition hover:border-primary/40 disabled:cursor-not-allowed disabled:opacity-40"
+            >
+              <ChevronLeft size={16} /> Anterior
+            </button>
+            <span className="px-3 text-sm text-ink-muted" aria-live="polite">
+              Página <strong className="text-ink">{safePage}</strong> de {totalPages}
+            </span>
+            <button
+              type="button"
+              onClick={() => setCurrentPage((page) => Math.min(totalPages, page + 1))}
+              disabled={safePage === totalPages}
+              className="inline-flex h-10 items-center gap-1 rounded-xl border border-border bg-white px-3 text-sm font-medium text-ink transition hover:border-primary/40 disabled:cursor-not-allowed disabled:opacity-40"
+            >
+              Siguiente <ChevronRight size={16} />
+            </button>
+          </nav>
+        )}
+        </>
       )}
 
       <FoodFormModal isOpen={isFormOpen} onClose={() => setIsFormOpen(false)} />

@@ -1,50 +1,40 @@
 "use client";
 
-import React, { useMemo } from "react";
+import React from "react";
+import { Card } from "@/components/ui/Card";
 import { useFoods } from "@/hooks/useFoods";
 import { calculateStats } from "@/lib/stats";
 import { AnimatedNumber } from "@/components/ui/AnimatedNumber";
-import { Package, Clock, XCircle, Heart, type LucideIcon } from "lucide-react";
+import { Package, AlertTriangle, XCircle, Heart, ArrowUpRight } from "lucide-react";
 
-interface Tile {
-  label: string;
-  caption: string;
-  value: number;
-  icon: LucideIcon;
-  iconBox: string;
-}
-
-/** Four key numbers, each in its own tinted tile (Gestalt: common region + similarity). */
 export function StatsSummary() {
   const { foods, stats } = useFoods();
-  const summary = useMemo(() => calculateStats(foods, stats), [foods, stats]);
+  const summary = calculateStats(foods, stats);
 
-  const tiles: Tile[] = [
-    { label: "En tu nevera", caption: "alimentos", value: summary.total, icon: Package, iconBox: "bg-primary-soft text-primary" },
-    { label: "Por vencer", caption: "en 5 días o menos", value: summary.critical + summary.soon, icon: Clock, iconBox: "bg-soon-soft text-soon-ink" },
-    { label: "Vencidos", caption: "revísalos", value: summary.expired, icon: XCircle, iconBox: "bg-expired-soft text-expired" },
-    { label: "Rescatados", caption: "consumidos a tiempo", value: summary.rescued, icon: Heart, iconBox: "bg-fresh-soft text-fresh-ink" },
+  const items = [
+    { label: "En tu cocina", value: summary.total, icon: Package, color: "text-primary", bg: "bg-primary-soft" },
+    { label: "Por usar pronto", value: summary.critical + summary.soon, icon: AlertTriangle, color: "text-[#A66C08]", bg: "bg-[#FFF3D6]" },
+    { label: "Vencidos", value: summary.expired, icon: XCircle, color: "text-expired", bg: "bg-expired-soft" },
+    { label: "Rescatados", value: summary.rescued, icon: Heart, color: "text-primary", bg: "bg-primary-soft" },
   ];
 
   return (
-    <section aria-label="Resumen" className="grid grid-cols-2 lg:grid-cols-4 gap-3">
-      {tiles.map((tile) => {
-        const Icon = tile.icon;
+    <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+      {items.map((item) => {
+        const Icon = item.icon;
         return (
-          <div key={tile.label} className="bg-surface rounded-2xl border border-border shadow-sm p-4 flex flex-col items-start min-[400px]:flex-row min-[400px]:items-center gap-3 min-w-0">
-            <span className={`w-11 h-11 shrink-0 rounded-xl flex items-center justify-center ${tile.iconBox}`}>
-              <Icon size={22} aria-hidden="true" />
-            </span>
-            <div className="min-w-0">
-              <p className="text-2xl font-bold leading-none mb-1">
-                <AnimatedNumber value={tile.value} />
-              </p>
-              <p className="text-sm font-medium leading-tight truncate">{tile.label}</p>
-              <p className="text-xs text-ink-muted leading-tight truncate">{tile.caption}</p>
+          <Card key={item.label} className="group relative overflow-hidden border-transparent bg-white p-4 transition hover:-translate-y-1 hover:border-primary/10 hover:shadow-lg hover:shadow-primary/5 sm:p-5">
+            <div className="mb-4 flex items-center justify-between">
+              <span className={`flex h-10 w-10 items-center justify-center rounded-xl ${item.bg}`}><Icon size={19} className={item.color} /></span>
+              <ArrowUpRight size={16} className="text-ink-muted/30 transition group-hover:text-primary" />
             </div>
-          </div>
+            <p className="text-3xl font-semibold tracking-tight">
+              <AnimatedNumber value={item.value} />
+            </p>
+            <span className="mt-1 block text-xs font-medium text-ink-muted sm:text-sm">{item.label}</span>
+          </Card>
         );
       })}
-    </section>
+    </div>
   );
 }
