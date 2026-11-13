@@ -1,4 +1,9 @@
+/**
+ * Form schema for a food item (RF-03). Mirrors the limits of `FoodItem`:
+ * name 2-60 after trimming, quantity > 0, notes <= 120, real calendar date.
+ */
 import { z } from "zod";
+import { isValidDateString } from "@/lib/expiry";
 
 export const foodCategories = [
   "frutas",
@@ -18,6 +23,7 @@ export const units = ["unidades", "g", "kg", "ml", "l", "paquetes", "porciones"]
 export const foodSchema = z.object({
   name: z
     .string()
+    .trim()
     .min(2, "El nombre debe tener al menos 2 caracteres")
     .max(60, "El nombre debe tener máximo 60 caracteres"),
   quantity: z
@@ -25,9 +31,13 @@ export const foodSchema = z.object({
     .positive("La cantidad debe ser mayor a 0"),
   unit: z.enum(units, { required_error: "Selecciona una unidad" }),
   category: z.enum(foodCategories, { required_error: "Selecciona una categoría" }),
-  expiresAt: z.string().min(1, "Selecciona una fecha de vencimiento"),
+  expiresAt: z
+    .string()
+    .min(1, "Selecciona una fecha de vencimiento")
+    .refine(isValidDateString, "La fecha no es válida"),
   notes: z.string().max(120, "Máximo 120 caracteres").optional().or(z.literal("")),
   photoUrl: z.string().optional().or(z.literal("")),
+  expiryIsEstimated: z.boolean().optional(),
 });
 
 export type FoodFormData = z.infer<typeof foodSchema>;

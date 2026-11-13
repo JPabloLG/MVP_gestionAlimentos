@@ -1,0 +1,41 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 300" role="img" aria-label="Nevera abierta con alimentos organizados por semáforo">
+  <circle cx="160" cy="150" r="140" fill="#E3F2EA"/>
+  <ellipse cx="160" cy="284" rx="100" ry="8" fill="#1F2A24" opacity=".1"/>
+  <!-- fridge body -->
+  <rect x="80" y="36" width="160" height="244" rx="18" fill="#FFFFFF" stroke="#C9D6CE" stroke-width="4"/>
+  <rect x="94" y="52" width="132" height="212" rx="10" fill="#F4FAF7"/>
+  <!-- open door -->
+  <path d="M240 40l52 18v210l-52 12z" fill="#FFFFFF" stroke="#C9D6CE" stroke-width="4" stroke-linejoin="round"/>
+  <rect x="252" y="110" width="28" height="8" rx="4" fill="#C9D6CE"/>
+  <rect x="252" y="180" width="28" height="8" rx="4" fill="#C9D6CE"/>
+  <!-- shelves -->
+  <rect x="94" y="118" width="132" height="5" fill="#C9D6CE"/>
+  <rect x="94" y="186" width="132" height="5" fill="#C9D6CE"/>
+  <!-- top shelf: milk + cheese (soon) -->
+  <path d="M108 74h22l5 10v34h-32v-34z" fill="#FFFFFF" stroke="#7C9FBF" stroke-width="3"/>
+  <rect x="103" y="92" width="32" height="12" fill="#7C9FBF"/>
+  <path d="M148 98l40-14v34h-40z" fill="#F2B134"/>
+  <circle cx="166" cy="104" r="4" fill="#E09A1A"/><circle cx="178" cy="96" r="3" fill="#E09A1A"/>
+  <circle cx="206" cy="102" r="14" fill="#3FA878"/>
+  <path d="M200 92c4-6 10-6 12 0" stroke="#2E7D5B" stroke-width="3" fill="none"/>
+  <!-- middle shelf: tomatoes (critical) + avocado -->
+  <circle cx="120" cy="166" r="16" fill="#EF6B4A"/>
+  <circle cx="148" cy="170" r="13" fill="#EF6B4A"/>
+  <path d="M116 152l4 3 4-3-1 5 4 2-6 1-1 4-1-4-6-1 4-2z" fill="#2E7D5B"/>
+  <ellipse cx="188" cy="164" rx="16" ry="21" fill="#4A7C3A"/>
+  <ellipse cx="188" cy="168" rx="10" ry="13" fill="#CFE08A"/>
+  <circle cx="188" cy="172" r="6" fill="#8A5A2B"/>
+  <!-- bottom drawer: carrots + lettuce -->
+  <rect x="100" y="206" width="120" height="50" rx="10" fill="#E3F2EA" stroke="#C9D6CE" stroke-width="3"/>
+  <path d="M120 212l10 36-20-34z" fill="#F4A340"/>
+  <path d="M140 210l8 38-18-36z" fill="#F4A340"/>
+  <circle cx="186" cy="226" r="20" fill="#5BBE8C"/>
+  <circle cx="200" cy="218" r="14" fill="#3FA878"/>
+  <!-- traffic light tag -->
+  <g transform="translate(18 70)">
+    <rect width="54" height="124" rx="14" fill="#1F2A24"/>
+    <circle cx="27" cy="26" r="13" fill="#B5372B"/>
+    <circle cx="27" cy="62" r="13" fill="#F2B134"/>
+    <circle cx="27" cy="98" r="13" fill="#3FA878"/>
+  </g>
+</svg>

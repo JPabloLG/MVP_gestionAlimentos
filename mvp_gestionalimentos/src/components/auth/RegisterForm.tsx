@@ -28,8 +28,8 @@ export function RegisterForm() {
     try {
       await registerUser(data.name, data.email, data.password);
       router.push("/dashboard");
-    } catch (e: any) {
-      setError(e.message || "Error al registrarse");
+    } catch (e) {
+      setError(e instanceof Error && e.message ? e.message : "Error al registrarse");
     }
   };
 

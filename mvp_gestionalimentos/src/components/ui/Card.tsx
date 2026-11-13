@@ -12,15 +12,14 @@ interface CardProps {
 
 export function Card({ children, className = "", animate = true }: CardProps) {
   const reduced = useReducedMotionSafe();
-  const Comp = reduced || !animate ? "div" : motion.div;
-  const motionProps = reduced || !animate ? {} : { whileHover: { scale: 1.01 }, transition: { duration: 0.15 } };
-
+  const still = reduced || !animate;
   return (
-    <Comp
+    <motion.div
       className={`bg-surface rounded-2xl shadow-sm border border-border p-4 ${className}`}
-      {...(motionProps as any)}
+      whileHover={still ? undefined : { scale: 1.01 }}
+      transition={still ? undefined : { duration: 0.15 }}
     >
       {children}
-    </Comp>
+    </motion.div>
   );
 }

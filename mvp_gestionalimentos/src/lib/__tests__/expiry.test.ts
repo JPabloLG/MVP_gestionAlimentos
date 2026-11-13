@@ -1,4 +1,4 @@
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { getDaysRemaining, getExpiryStatus, getExpiryLabel, sortByPriority } from '../expiry';
 
 describe('expiry', () => {
@@ -43,5 +43,31 @@ describe('expiry', () => {
     expect(sorted[0].id).toBe('2');
     expect(sorted[1].id).toBe('3');
     expect(sorted[2].id).toBe('1');
+  });
+});
+
+describe('expiry with a fixed clock (RF-07, RN-03)', () => {
+  beforeEach(() => {
+    vi.useFakeTimers();
+    // 23:59 local: the riskiest moment for off-by-one errors in UTC-5.
+    vi.setSystemTime(new Date(2026, 9, 28, 23, 59, 0));
+  });
+  afterEach(() => vi.useRealTimers());
+
+  it.each([
+    ['2026-10-27', -1, 'expired'],
+    ['2026-10-28', 0, 'critical'],
+    ['2026-10-30', 2, 'critical'],
+    ['2026-10-31', 3, 'soon'],
+    ['2026-11-02', 5, 'soon'],
+    ['2026-11-03', 6, 'fresh'],
+  ])('%s is %i days away (%s) using the real clock', (date, days, status) => {
+    expect(getDaysRemaining(date)).toBe(days);
+    expect(getExpiryStatus(getDaysRemaining(date))).toBe(status);
+  });
+
+  it('does not shift the day just after midnight', () => {
+    vi.setSystemTime(new Date(2026, 9, 29, 0, 1, 0));
+    expect(getDaysRemaining('2026-10-29')).toBe(0);
   });
 });

@@ -29,9 +29,14 @@ export interface FoodItem {
   expiresAt: string; // "YYYY-MM-DD" (fecha local, NO ISO con hora)
   notes?: string; // opcional, máx. 120 caracteres
   photoUrl?: string; // data URL (base64), opcional
+  /** True when the date was suggested from the category instead of read from a label. Optional: older data lacks it. */
+  expiryIsEstimated?: boolean;
   createdAt: string; // ISO
   updatedAt: string; // ISO
 }
+
+/** A food as entered by the user, before the app assigns id, owner and timestamps. */
+export type NewFood = Omit<FoodItem, "id" | "userId" | "createdAt" | "updatedAt">;
 
 export type ExpiryStatus = "expired" | "critical" | "soon" | "fresh";
 

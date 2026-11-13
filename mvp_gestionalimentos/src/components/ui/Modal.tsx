@@ -45,9 +45,10 @@ export function Modal({ isOpen, onClose, title, children }: ModalProps) {
             animate={reduced ? { opacity: 1 } : { opacity: 1, scale: 1, y: 0 }}
             exit={reduced ? { opacity: 0 } : { opacity: 0, scale: 0.95, y: 10 }}
             transition={{ duration: 0.2 }}
-            className="fixed left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 z-50 w-[90vw] max-w-lg max-h-[90vh] overflow-auto bg-surface rounded-2xl shadow-xl border border-border"
+            className="fixed left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 z-50 w-[calc(100vw-2rem)] max-w-lg max-h-[90dvh] overflow-auto bg-surface rounded-2xl shadow-xl border border-border"
             role="dialog"
             aria-modal="true"
+            aria-label={title}
           >
             <div className="flex items-center justify-between p-4 border-b border-border">
               {title && <h2 className="text-lg font-semibold">{title}</h2>}

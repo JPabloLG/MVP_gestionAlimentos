@@ -1,49 +1,49 @@
 "use client";
 
 import React from "react";
-import { Card } from "@/components/ui/Card";
-import { useRecipes } from "@/hooks/useRecipes";
 import Link from "next/link";
-import { Clock } from "lucide-react";
+import { useRecipes } from "@/hooks/useRecipes";
+import { RecipeCard } from "@/components/recipes/RecipeCard";
+import { ArrowRight, BookOpen } from "lucide-react";
 
+/** Suggested recipes: swipeable row on phones, grid on larger screens. */
 export function RecipeSuggestions() {
   const { recommendations } = useRecipes();
   const recs = recommendations.slice(0, 4);
 
-  if (recs.length === 0) {
-    return (
-      <Card>
-        <h2 className="text-lg font-semibold mb-2">Recetas sugeridas</h2>
-        <p className="text-ink-muted text-sm">Agrega más alimentos para ver sugerencias.</p>
-      </Card>
-    );
-  }
-
   return (
-    <Card>
-      <div className="flex items-center justify-between mb-4">
-        <h2 className="text-lg font-semibold">Recetas sugeridas</h2>
-        <Link href="/recetas" className="text-sm text-primary hover:underline">
-          Ver todas
-        </Link>
-      </div>
-      <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-3">
-        {recs.map((recipe) => (
-          <Link key={recipe.id} href={`/recetas/${recipe.id}`}>
-            <Card className="h-full hover:shadow-md transition cursor-pointer">
-              <div className="flex items-center gap-2 mb-2">
-                <span className="text-xl">{recipe.emoji}</span>
-                <h3 className="font-semibold text-sm line-clamp-1">{recipe.title}</h3>
-              </div>
-              <p className="text-xs text-ink-muted mb-2 line-clamp-2">{recipe.description}</p>
-              <div className="flex items-center gap-1 text-xs text-ink-muted">
-                <Clock size={12} />
-                {recipe.timeMinutes} min
-              </div>
-            </Card>
+    <section aria-labelledby="sugeridas">
+      <div className="flex items-end justify-between gap-2 mb-3">
+        <div>
+          <h2 id="sugeridas" className="text-xl font-semibold flex items-center gap-2">
+            <BookOpen size={20} className="text-primary" aria-hidden="true" />
+            Recetas sugeridas
+          </h2>
+          <p className="text-sm text-ink-muted">Primero las que rescatan lo que está por vencer</p>
+        </div>
+        {recs.length > 0 && (
+          <Link href="/recetas" className="text-sm text-primary font-medium hover:underline inline-flex items-center gap-1 min-h-[44px] shrink-0">
+            Ver todas <ArrowRight size={14} aria-hidden="true" />
           </Link>
-        ))}
+        )}
       </div>
-    </Card>
+
+      {recs.length === 0 ? (
+        <div className="bg-surface rounded-2xl border border-dashed border-border p-6 text-center text-sm text-ink-muted">
+          Agrega alimentos a tu inventario para recibir sugerencias.{" "}
+          <Link href="/inventario" className="text-primary font-medium hover:underline">
+            Ir al inventario
+          </Link>
+        </div>
+      ) : (
+        <div className="flex gap-3 overflow-x-auto snap-x snap-mandatory no-scrollbar -mx-4 px-4 pb-1 sm:mx-0 sm:px-0 sm:grid sm:grid-cols-2 lg:grid-cols-4 sm:overflow-visible">
+          {recs.map((recipe) => (
+            <div key={recipe.id} className="snap-start shrink-0 w-[72%] sm:w-auto">
+              <RecipeCard recipe={recipe} compact />
+            </div>
+          ))}
+        </div>
+      )}
+    </section>
   );
 }

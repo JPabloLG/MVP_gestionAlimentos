@@ -10,9 +10,9 @@ interface BadgeProps {
 
 export function Badge({ children, variant = "default", className = "" }: BadgeProps) {
   const variants = {
-    fresh: "bg-fresh-soft text-fresh",
-    soon: "bg-soon-soft text-ink",
-    critical: "bg-critical-soft text-critical",
+    fresh: "bg-fresh-soft text-fresh-ink",
+    soon: "bg-soon-soft text-soon-ink",
+    critical: "bg-critical-soft text-critical-ink",
     expired: "bg-expired-soft text-expired",
     default: "bg-surface-muted text-ink",
   };

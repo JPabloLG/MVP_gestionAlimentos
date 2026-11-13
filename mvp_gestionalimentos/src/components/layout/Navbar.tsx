@@ -23,7 +23,7 @@ export function Navbar() {
 
   return (
     <>
-      <header className="hidden md:block border-b border-border bg-surface sticky top-0 z-30">
+      <header className="hidden md:block border-b border-border bg-surface/95 backdrop-blur sticky top-0 z-30">
         <div className="max-w-6xl mx-auto px-4 h-16 flex items-center justify-between">
           <div className="flex items-center gap-8">
             <Logo />
@@ -32,8 +32,9 @@ export function Navbar() {
                 <Link
                   key={link.href}
                   href={link.href}
-                  className={`text-sm hover:text-primary ${
-                    pathname === link.href ? "text-primary font-medium" : "text-ink"
+                  aria-current={pathname.startsWith(link.href) ? "page" : undefined}
+                  className={`text-sm hover:text-primary py-2 ${
+                    pathname.startsWith(link.href) ? "text-primary font-semibold" : "text-ink"
                   }`}
                 >
                   {link.label}
@@ -47,7 +48,7 @@ export function Navbar() {
               Agregar alimento
             </Button>
             <div className="flex items-center gap-2">
-              <span className="text-sm text-ink-muted">{user?.name}</span>
+              <span className="hidden lg:inline text-sm text-ink-muted max-w-40 truncate">{user?.name}</span>
               <Button variant="ghost" size="sm" onClick={logout}>
                 Cerrar sesión
               </Button>

@@ -1,3 +1,18 @@
+/** Text helpers shared by the UI and the business logic. */
+
+/**
+ * Lowercase, accent-free, single-spaced text. Lets searches and name
+ * comparisons ignore tildes and capitals ("Plátano" equals "platano").
+ */
+export function foldText(text: string): string {
+  return text
+    .toLowerCase()
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .replace(/\s+/g, " ")
+    .trim();
+}
+
 export function formatDateES(date: Date): string {
   return date.toLocaleDateString("es-CO", {
     weekday: "long",

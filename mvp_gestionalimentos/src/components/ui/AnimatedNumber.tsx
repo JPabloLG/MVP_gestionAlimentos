@@ -8,25 +8,17 @@ export function AnimatedNumber({ value }: { value: number }) {
   const [display, setDisplay] = useState(0);
 
   useEffect(() => {
-    if (reduced) {
-      setDisplay(value);
-      return;
-    }
-    let start = 0;
+    if (reduced) return;
     const duration = 600;
     const startTime = Date.now();
-    const animate = () => {
-      const now = Date.now();
-      const progress = Math.min((now - startTime) / duration, 1);
-      setDisplay(Math.floor(progress * value));
-      if (progress < 1) {
-        requestAnimationFrame(animate);
-      } else {
-        setDisplay(value);
-      }
-    };
-    requestAnimationFrame(animate);
+    let frame = requestAnimationFrame(function animate() {
+      const progress = Math.min((Date.now() - startTime) / duration, 1);
+      setDisplay(progress < 1 ? Math.floor(progress * value) : value);
+      if (progress < 1) frame = requestAnimationFrame(animate);
+    });
+    return () => cancelAnimationFrame(frame);
   }, [value, reduced]);
 
-  return <span>{display}</span>;
+  // With reduced motion the final value is rendered directly, no animation state needed.
+  return <span>{reduced ? value : display}</span>;
 }

@@ -13,6 +13,9 @@ interface ToastContextType {
   showToast: (message: string, type?: "success" | "error" | "info") => void;
 }
 
+// Errors stay longer: they usually need reading.
+const toastDuration = (type: string) => (type === "error" ? 6000 : 3500);
+
 const ToastContext = createContext<ToastContextType | undefined>(undefined);
 
 export function ToastProvider({ children }: { children: React.ReactNode }) {
@@ -23,13 +26,16 @@ export function ToastProvider({ children }: { children: React.ReactNode }) {
     setToasts((prev) => [...prev, { id, message, type }]);
     setTimeout(() => {
       setToasts((prev) => prev.filter((t) => t.id !== id));
-    }, 2500);
+    }, toastDuration(type));
   };
 
   return (
     <ToastContext.Provider value={{ showToast }}>
       {children}
-      <div className="fixed bottom-20 md:bottom-4 left-1/2 -translate-x-1/2 z-50 flex flex-col gap-2">
+      <div
+        aria-live="polite"
+        className="fixed bottom-[calc(5.5rem+env(safe-area-inset-bottom))] md:bottom-6 left-1/2 -translate-x-1/2 z-[60] flex flex-col items-center gap-2 w-[calc(100%-2rem)] max-w-sm pointer-events-none"
+      >
         <AnimatePresence>
           {toasts.map((toast) => (
             <motion.div
@@ -37,7 +43,8 @@ export function ToastProvider({ children }: { children: React.ReactNode }) {
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0, y: -20 }}
-              className={`px-4 py-2 rounded-xl shadow-lg text-sm ${
+              role={toast.type === "error" ? "alert" : "status"}
+              className={`px-4 py-3 rounded-xl shadow-lg text-sm text-center w-full ${
                 toast.type === "error"
                   ? "bg-expired text-white"
                   : toast.type === "info"
