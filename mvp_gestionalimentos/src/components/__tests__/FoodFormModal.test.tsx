@@ -4,11 +4,14 @@ import { createRoot, Root } from 'react-dom/client';
 import { FoodFormModal } from '../inventory/FoodFormModal';
 import { ToastProvider } from '@/context/ToastProvider';
 import { dateInDays } from '@/lib/expiry';
+import { FoodItem } from '@/types';
 
 const addFood = vi.fn(async () => true);
+const updateFood = vi.fn(async () => true);
+let inventory: FoodItem[] = [];
 
 vi.mock('@/hooks/useFoods', () => ({
-  useFoods: () => ({ foods: [], addFood, updateFood: vi.fn(async () => true) }),
+  useFoods: () => ({ foods: inventory, addFood, updateFood }),
 }));
 vi.mock('@/hooks/useAuth', () => ({ useAuth: () => ({ user: { id: 'u1' } }) }));
 
@@ -62,6 +65,8 @@ beforeEach(() => {
   (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
   localStorage.clear();
   addFood.mockClear();
+  updateFood.mockClear();
+  inventory = [];
   host = document.createElement('div');
   document.body.appendChild(host);
   root = createRoot(host);
@@ -125,6 +130,53 @@ describe('FoodFormModal (RF-03)', () => {
     await act(async () => button('No sé la fecha: sugerir según la categoría').click());
     await type(field('expiresAt'), dateInDays(9));
     expect(document.body.textContent).not.toContain('Fecha estimada');
+  });
+
+  describe('duplicate warning (M3)', () => {
+    const existing: FoodItem = {
+      id: 'leche-1',
+      userId: 'u1',
+      name: 'Leche',
+      quantity: 1,
+      unit: 'l',
+      category: 'lacteos',
+      expiresAt: dateInDays(1),
+      notes: '',
+      createdAt: '',
+      updatedAt: '',
+    };
+
+    async function tryToAddLeche() {
+      inventory = [existing];
+      await open(true);
+      await type(field('name'), 'leches');
+      await act(async () => button('+1 semana').click());
+      await act(async () => button('Agregar').click());
+    }
+
+    it('warns with how much there is instead of saving', async () => {
+      await tryToAddLeche();
+      expect(addFood).not.toHaveBeenCalled();
+      expect(document.querySelector('[role="alert"]')!.textContent).toContain('Ya tienes Leche: 1 l (vence mañana)');
+    });
+
+    it('"Agregar aparte" saves it as a new food', async () => {
+      await tryToAddLeche();
+      await act(async () => button('Agregar aparte').click());
+      expect(addFood).toHaveBeenCalledWith(expect.objectContaining({ name: 'leches' }));
+    });
+
+    it('"Editar el existente" switches the form to that food', async () => {
+      await tryToAddLeche();
+      await act(async () => button('Editar el existente').click());
+      expect(field('name').value).toBe('Leche');
+      expect(field('expiresAt').value).toBe(dateInDays(1));
+
+      await type(field('quantity'), '2');
+      await act(async () => button('Guardar cambios').click());
+      expect(updateFood).toHaveBeenCalledWith(expect.objectContaining({ id: 'leche-1', quantity: 2 }));
+      expect(addFood).not.toHaveBeenCalled();
+    });
   });
 
   it('has no duplicated ids, so every label points at its own field', async () => {

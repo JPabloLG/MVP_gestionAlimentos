@@ -2,7 +2,7 @@
 
 import React from "react";
 import Link from "next/link";
-import { Button } from "@/components/ui/Button";
+import { buttonClasses } from "@/components/ui/Button";
 import { useAuth } from "@/hooks/useAuth";
 import { motion } from "framer-motion";
 
@@ -21,11 +21,11 @@ export default function NotFound() {
           Parece que lo que buscas ya no está fresco... o nunca existió.
         </p>
         <div className="flex gap-3 justify-center flex-wrap">
-          <Link href="/">
-            <Button>Ir al inicio</Button>
+          <Link href="/" className={buttonClasses("primary")}>
+            Ir al inicio
           </Link>
-          <Link href={user ? "/dashboard" : "/login"}>
-            <Button variant="secondary">Ir a mi nevera</Button>
+          <Link href={user ? "/dashboard" : "/login"} className={buttonClasses("secondary")}>
+            Ir a mi nevera
           </Link>
         </div>
       </motion.div>

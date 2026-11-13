@@ -6,7 +6,7 @@
 import { FoodCategory, FoodItem, NewFood } from "@/types";
 import { estimatedShelfLifeDays } from "@/data/shelfLife";
 import { demoFoods } from "@/data/demoFoods";
-import { dateInDays } from "./expiry";
+import { dateInDays, sortByPriority } from "./expiry";
 import { normalize } from "./recipes";
 
 /** The sample inventory with dates resolved against `today`. */
@@ -32,4 +32,17 @@ export function missingDemoFoods(existing: FoodItem[], today: Date = new Date())
  */
 export function suggestExpiryDate(category: FoodCategory, today: Date = new Date()): string {
   return dateInDays(estimatedShelfLifeDays[category], today);
+}
+
+/**
+ * Foods the user already has under the same normalized name, most urgent first.
+ * Lets the form warn before a re-purchase is registered as a new food.
+ */
+export function findDuplicates(name: string, foods: FoodItem[], today: Date = new Date()): FoodItem[] {
+  const key = normalize(name);
+  if (!key) return [];
+  return sortByPriority(
+    foods.filter((f) => normalize(f.name) === key),
+    today
+  );
 }

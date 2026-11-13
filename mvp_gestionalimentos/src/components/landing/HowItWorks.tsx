@@ -17,7 +17,7 @@ export function HowItWorks() {
         <div className="grid md:grid-cols-3 gap-4">
           {steps.map((s) => (
             <Card key={s.num}>
-              <div className="w-10 h-10 rounded-full bg-primary-soft text-primary flex items-center justify-center font-semibold mb-3">
+              <div className="w-10 h-10 rounded-full bg-primary text-white flex items-center justify-center font-semibold mb-3">
                 {s.num}
               </div>
               <h3 className="text-lg font-semibold mb-2">{s.title}</h3>

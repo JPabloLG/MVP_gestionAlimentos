@@ -45,11 +45,13 @@ export function BottomSheet({ isOpen, onClose, title, children }: BottomSheetPro
             animate={reduced ? { opacity: 1 } : { y: 0 }}
             exit={reduced ? { opacity: 0 } : { y: "100%" }}
             transition={{ type: "spring", damping: 25, stiffness: 300 }}
-            className="fixed bottom-0 left-0 right-0 z-50 md:hidden bg-surface rounded-t-3xl shadow-xl border-t border-border max-h-[90vh] overflow-auto pb-[env(safe-area-inset-bottom)]"
+            className="fixed bottom-0 left-0 right-0 z-50 md:hidden bg-surface rounded-t-3xl shadow-xl border-t border-border max-h-[90dvh] overflow-auto overscroll-contain pb-[env(safe-area-inset-bottom)]"
             role="dialog"
             aria-modal="true"
+            aria-label={title}
           >
-            <div className="flex items-center justify-between p-4 border-b border-border">
+            <div className="sticky top-0 z-10 bg-surface flex items-center justify-between p-4 border-b border-border">
+              <span className="absolute left-1/2 top-1.5 -translate-x-1/2 w-10 h-1 rounded-full bg-border" aria-hidden="true" />
               {title && <h2 className="text-lg font-semibold">{title}</h2>}
               <button
                 onClick={onClose}

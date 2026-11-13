@@ -1,12 +1,12 @@
 import Link from "next/link";
-import { Button } from "@/components/ui/Button";
+import { buttonClasses } from "@/components/ui/buttonStyles";
 
 export default function TerminosPage() {
   return (
     <div className="min-h-screen bg-background px-4 py-12">
       <div className="max-w-2xl mx-auto">
         <h1 className="text-3xl font-display mb-6">Términos y condiciones</h1>
-        <p className="text-sm text-ink-muted mb-6">Última actualización: Octubre 2026</p>
+        <p className="text-sm text-ink-muted mb-6">Última actualización: Noviembre 2026</p>
         <div className="space-y-6 text-ink">
           <section>
             <h2 className="text-xl font-semibold mb-2">1) Aceptación</h2>
@@ -46,8 +46,8 @@ export default function TerminosPage() {
           </section>
         </div>
         <div className="mt-8">
-          <Link href="/">
-            <Button variant="secondary">Volver</Button>
+          <Link href="/" className={buttonClasses("secondary")}>
+            Volver
           </Link>
         </div>
       </div>

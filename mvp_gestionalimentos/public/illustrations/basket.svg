@@ -1,0 +1,26 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 240 190" role="img" aria-label="Canasta con alimentos frescos">
+  <ellipse cx="120" cy="176" rx="92" ry="9" fill="#1F2A24" opacity=".12"/>
+  <!-- lettuce -->
+  <circle cx="72" cy="78" r="32" fill="#3FA878"/>
+  <circle cx="92" cy="62" r="26" fill="#5BBE8C"/>
+  <path d="M60 70c10 6 20 6 30 0M70 90c8 4 16 4 24 0" stroke="#2E7D5B" stroke-width="3" fill="none" stroke-linecap="round"/>
+  <!-- baguette -->
+  <rect x="118" y="20" width="26" height="96" rx="13" fill="#D9A95B" transform="rotate(22 131 68)"/>
+  <path d="M128 40l14 6M122 56l14 6M116 72l14 6" stroke="#B5843A" stroke-width="3" stroke-linecap="round" transform="rotate(22 131 68)"/>
+  <!-- carrot -->
+  <path d="M168 38l18 72-30-66z" fill="#F4A340"/>
+  <path d="M160 40c-4-12 2-20 8-22 0 8 2 12 6 16 4-6 10-8 16-6-2 6-8 10-14 12z" fill="#3FA878"/>
+  <!-- tomato -->
+  <circle cx="176" cy="92" r="24" fill="#EF6B4A"/>
+  <circle cx="168" cy="84" r="6" fill="#FFFFFF" opacity=".35"/>
+  <path d="M170 70l6 4 6-4-2 7 6 3-8 1-2 6-2-6-8-1 6-3z" fill="#2E7D5B"/>
+  <!-- milk -->
+  <path d="M104 48h28l6 14v40h-40v-40z" fill="#FFFFFF" stroke="#E7E2D6" stroke-width="2"/>
+  <rect x="98" y="72" width="40" height="16" fill="#7C9FBF"/>
+  <path d="M104 48l-6 14h40" fill="none" stroke="#E7E2D6" stroke-width="2"/>
+  <!-- basket -->
+  <path d="M30 100h180l-18 70H48z" fill="#C98B4F"/>
+  <path d="M40 120h160M44 140h152M50 160h140" stroke="#A8703A" stroke-width="4"/>
+  <path d="M70 100l8 70M110 100l2 70M150 100l-4 70M190 100l-12 70" stroke="#A8703A" stroke-width="4"/>
+  <rect x="22" y="92" width="196" height="16" rx="8" fill="#B57A41"/>
+</svg>

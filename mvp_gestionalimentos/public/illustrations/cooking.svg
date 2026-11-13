@@ -1,0 +1,17 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 240 180" role="img" aria-label="Olla cocinando con verduras">
+  <circle cx="120" cy="96" r="80" fill="#FDF0DC"/>
+  <ellipse cx="120" cy="168" rx="80" ry="7" fill="#1F2A24" opacity=".12"/>
+  <!-- steam -->
+  <path d="M92 40c-8-10 8-16 0-28M120 36c-8-10 8-16 0-28M148 40c-8-10 8-16 0-28" stroke="#C9D6CE" stroke-width="5" fill="none" stroke-linecap="round"/>
+  <!-- veggies popping out -->
+  <circle cx="96" cy="74" r="14" fill="#EF6B4A"/>
+  <path d="M120 54l12 34-22-30z" fill="#F4A340"/>
+  <circle cx="148" cy="72" r="16" fill="#3FA878"/>
+  <circle cx="128" cy="80" r="10" fill="#F2B134"/>
+  <!-- pot -->
+  <rect x="46" y="78" width="148" height="14" rx="7" fill="#1F5A41"/>
+  <path d="M56 92h128v46a24 24 0 0 1-24 24H80a24 24 0 0 1-24-24z" fill="#2E7D5B"/>
+  <rect x="26" y="100" width="34" height="10" rx="5" fill="#1F5A41"/>
+  <rect x="180" y="100" width="34" height="10" rx="5" fill="#1F5A41"/>
+  <path d="M76 112h88" stroke="#3FA878" stroke-width="6" stroke-linecap="round" opacity=".6"/>
+</svg>

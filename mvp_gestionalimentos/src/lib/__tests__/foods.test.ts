@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { buildDemoFoods, missingDemoFoods, suggestExpiryDate } from '../foods';
+import { buildDemoFoods, findDuplicates, missingDemoFoods, suggestExpiryDate } from '../foods';
 import { estimatedShelfLifeDays } from '@/data/shelfLife';
 import { foodCategories } from '../validation/food';
 import { getDaysRemaining, getExpiryStatus } from '../expiry';
@@ -52,5 +52,27 @@ describe('estimated spoilage date (M2, RF-03)', () => {
   it('perishables get shorter estimates than pantry items', () => {
     expect(estimatedShelfLifeDays.carnes).toBeLessThan(estimatedShelfLifeDays.lacteos);
     expect(estimatedShelfLifeDays.frutas).toBeLessThan(estimatedShelfLifeDays.despensa);
+  });
+});
+
+describe('duplicate detection (M3)', () => {
+  const have = [
+    asItem({ name: 'Leche', quantity: 1, unit: 'l', category: 'lacteos', expiresAt: '2026-11-10' }, 1),
+    asItem({ name: 'Tomates', quantity: 6, unit: 'unidades', category: 'verduras', expiresAt: '2026-10-29' }, 2),
+    asItem({ name: 'leche', quantity: 2, unit: 'l', category: 'lacteos', expiresAt: '2026-10-30' }, 3),
+  ];
+
+  it('finds the same food ignoring case, accents, spaces and plurals', () => {
+    expect(findDuplicates('  TOMATE ', have, today).map((f) => f.id)).toEqual(['2']);
+  });
+
+  it('returns every match with the most urgent first', () => {
+    expect(findDuplicates('Leche', have, today).map((f) => f.id)).toEqual(['3', '1']);
+  });
+
+  it('does not confuse different foods that share letters', () => {
+    expect(findDuplicates('Leche de coco', have, today)).toEqual([]);
+    expect(findDuplicates('Tomatillo', have, today)).toEqual([]);
+    expect(findDuplicates('', have, today)).toEqual([]);
   });
 });
