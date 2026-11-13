@@ -1,14 +1,19 @@
 "use client";
 
+/**
+ * Recipe detail (RF-10). Ingredient availability comes from the same engine
+ * as the recommendation list, so both screens always agree.
+ */
 import React from "react";
-import { useParams } from "next/navigation";
+import { notFound, useParams } from "next/navigation";
 import { recipes } from "@/data/recipes";
 import { Card } from "@/components/ui/Card";
-import { Button } from "@/components/ui/Button";
 import { useFoods } from "@/hooks/useFoods";
-import { normalize } from "@/lib/recipes";
+import { analyzeRecipe } from "@/lib/recipes";
 import { Clock, Users, ChefHat, ArrowLeft } from "lucide-react";
 import Link from "next/link";
+
+const difficultyLabel = { facil: "Fácil", media: "Media" } as const;
 
 export default function RecetaDetallePage() {
   const params = useParams();
@@ -16,24 +21,11 @@ export default function RecetaDetallePage() {
   const recipe = recipes.find((r) => r.id === id);
   const { foods } = useFoods();
 
-  if (!recipe) {
-    return (
-      <div>
-        <p>Receta no encontrada</p>
-        <Link href="/recetas">
-          <Button variant="secondary">Volver a recetas</Button>
-        </Link>
-      </div>
-    );
-  }
+  if (!recipe) notFound();
 
-  const hasIngredient = (ingKey: string) => {
-    const ingNorm = normalize(ingKey);
-    return foods.some((f) => {
-      const foodNorm = normalize(f.name);
-      return foodNorm === ingNorm || foodNorm.includes(ingNorm) || ingNorm.includes(foodNorm);
-    });
-  };
+  const analysis = analyzeRecipe(recipe, foods);
+  const have = analysis.ingredientMatches.filter((m) => m.food);
+  const missing = analysis.ingredientMatches.filter((m) => !m.food);
 
   return (
     <div className="space-y-6 max-w-3xl">
@@ -61,29 +53,49 @@ export default function RecetaDetallePage() {
           </span>
           <span className="flex items-center gap-1">
             <ChefHat size={16} />
-            {recipe.difficulty}
+            {difficultyLabel[recipe.difficulty]}
           </span>
         </div>
       </Card>
 
       <Card>
         <h2 className="text-xl font-semibold mb-3">Ingredientes</h2>
-        <ul className="space-y-2">
-          {recipe.ingredients.map((ing, idx) => {
-            const have = hasIngredient(ing.key || ing.label);
-            return (
-              <li key={idx} className="flex items-center gap-2">
-                <span className={`w-5 h-5 rounded-full flex items-center justify-center text-xs ${have ? "bg-fresh-soft text-fresh" : "bg-surface-muted text-ink-muted"}`}>
-                  {have ? "✓" : "○"}
-                </span>
-                <span className={have ? "text-ink" : "text-ink-muted"}>
-                  {ing.label}
-                  {ing.optional && <span className="text-xs ml-1">(opcional)</span>}
-                </span>
-              </li>
-            );
-          })}
-        </ul>
+        {have.length > 0 && (
+          <>
+            <h3 className="text-sm font-semibold text-ink-muted mb-2">Ya tienes</h3>
+            <ul className="space-y-2 mb-4">
+              {have.map((ing) => (
+                <li key={ing.key} className="flex items-center gap-2 flex-wrap">
+                  <span className="w-5 h-5 rounded-full flex items-center justify-center text-xs bg-fresh-soft text-ink" aria-hidden="true">
+                    ✓
+                  </span>
+                  <span>
+                    {ing.label}
+                    {ing.optional && <span className="text-xs ml-1">(opcional)</span>}
+                  </span>
+                </li>
+              ))}
+            </ul>
+          </>
+        )}
+        {missing.length > 0 && (
+          <>
+            <h3 className="text-sm font-semibold text-ink-muted mb-2">Te falta</h3>
+            <ul className="space-y-2">
+              {missing.map((ing) => (
+                <li key={ing.key} className="flex items-center gap-2 text-ink-muted">
+                  <span className="w-5 h-5 rounded-full flex items-center justify-center text-xs bg-surface-muted" aria-hidden="true">
+                    ○
+                  </span>
+                  <span>
+                    {ing.label}
+                    {ing.optional && <span className="text-xs ml-1">(opcional)</span>}
+                  </span>
+                </li>
+              ))}
+            </ul>
+          </>
+        )}
       </Card>
 
       <Card>
