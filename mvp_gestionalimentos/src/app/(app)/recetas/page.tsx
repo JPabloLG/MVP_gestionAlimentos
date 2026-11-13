@@ -10,12 +10,12 @@ import { RecipeCatalogCard } from "@/components/recipes/RecipeCatalogCard";
 import { matchesIngredient } from "@/lib/recipes";
 
 const categoryFilters = [
-  { label: "Todas", tags: [] },
-  { label: "Rápidas", tags: ["rapido"] },
-  { label: "Desayunos", tags: ["desayuno"] },
-  { label: "Comidas", tags: ["comida"] },
-  { label: "Frescas", tags: ["fresco", "fruta"] },
-  { label: "Tradicionales", tags: ["tradicional", "casero"] },
+  { label: "Todas", emoji: "🍽️", tags: [] },
+  { label: "Rápidas", emoji: "⚡", tags: ["rapido"] },
+  { label: "Desayunos", emoji: "🍳", tags: ["desayuno"] },
+  { label: "Comidas", emoji: "🍲", tags: ["comida"] },
+  { label: "Frescas", emoji: "🥗", tags: ["fresco", "fruta"] },
+  { label: "Tradicionales", emoji: "🫓", tags: ["tradicional", "casero"] },
 ];
 
 type QuickFilter = "all" | "ready" | "rescue";
@@ -64,6 +64,11 @@ export default function RecetasPage() {
       <section className="relative isolate overflow-hidden rounded-[2rem] bg-[#1F5A41] px-6 py-8 text-white sm:px-9 sm:py-10">
         <div className="pointer-events-none absolute -right-10 -top-32 -z-10 h-80 w-80 rounded-full border border-white/10" />
         <div className="pointer-events-none absolute -bottom-36 right-28 -z-10 h-64 w-64 rounded-full bg-primary blur-3xl" />
+        <div aria-hidden className="pointer-events-none absolute right-8 top-6 -z-10 hidden gap-3 text-3xl opacity-80 md:flex">
+          <span className="animate-float">🍳</span>
+          <span className="animate-float [animation-delay:1.5s]">🥘</span>
+          <span className="animate-float [animation-delay:3s]">🥗</span>
+        </div>
         <div className="relative flex flex-col justify-between gap-6 md:flex-row md:items-end">
           <div className="max-w-2xl">
             <span className="mb-4 inline-flex items-center gap-2 rounded-full bg-white/10 px-3 py-1.5 text-xs font-semibold text-white/80">
@@ -129,18 +134,18 @@ export default function RecetasPage() {
           ))}
         </div>
 
-        <div className="flex flex-wrap gap-2">
+        <div className="no-scrollbar -mx-4 flex gap-2 overflow-x-auto px-4 pb-1 sm:mx-0 sm:flex-wrap sm:px-0">
           {categoryFilters.map((filter) => (
             <button
               key={filter.label}
               onClick={() => setSelectedFilter(filter.label)}
-              className={`rounded-full border px-3 py-1.5 text-xs font-medium transition ${
+              className={`shrink-0 rounded-full border px-3 py-1.5 text-xs font-medium transition ${
                 selectedFilter === filter.label
                   ? "border-primary bg-primary-soft text-primary"
                   : "border-border/80 bg-white/80 text-ink-muted hover:border-primary/40"
               }`}
             >
-              {filter.label}
+              <span aria-hidden className="mr-1">{filter.emoji}</span>{filter.label}
             </button>
           ))}
         </div>

@@ -18,6 +18,11 @@ export function GreetingHeader() {
       <section className="relative isolate overflow-hidden rounded-[2rem] bg-[#1F5A41] px-6 py-7 text-white shadow-[0_24px_60px_-32px_rgba(31,90,65,0.65)] sm:px-9 sm:py-9">
         <div className="pointer-events-none absolute -right-14 -top-32 -z-10 h-80 w-80 rounded-full border border-white/10" />
         <div className="pointer-events-none absolute -bottom-36 right-24 -z-10 h-72 w-72 rounded-full bg-primary blur-3xl" />
+        <div aria-hidden className="pointer-events-none absolute right-6 top-5 -z-10 hidden gap-3 text-3xl opacity-80 sm:flex">
+          <span className="animate-float">🥑</span>
+          <span className="animate-float [animation-delay:1.2s]">🍅</span>
+          <span className="animate-float [animation-delay:2.4s]">🥕</span>
+        </div>
         <div className="flex flex-col justify-between gap-7 md:flex-row md:items-end">
           <div>
             <span className="mb-4 inline-flex items-center gap-2 rounded-full bg-white/10 px-3 py-1.5 text-xs font-semibold text-white/80">

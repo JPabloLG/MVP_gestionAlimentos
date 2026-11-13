@@ -24,7 +24,7 @@ export function BottomNav() {
         <div className="grid grid-cols-5 items-center h-16">
           {links.slice(0, 2).map((link) => {
             const Icon = link.icon;
-            const active = pathname === link.href;
+            const active = pathname === link.href || pathname.startsWith(`${link.href}/`);
             return (
               <Link
                 key={link.href}
@@ -33,8 +33,10 @@ export function BottomNav() {
                   active ? "text-primary" : "text-ink-muted"
                 }`}
               >
-                <Icon size={20} />
-                <span className="text-xs">{link.label}</span>
+                <span className={`flex h-7 w-12 items-center justify-center rounded-full transition-colors ${active ? "bg-primary-soft" : ""}`}>
+                  <Icon size={20} />
+                </span>
+                <span className={`text-xs ${active ? "font-semibold" : ""}`}>{link.label}</span>
               </Link>
             );
           })}
@@ -43,13 +45,13 @@ export function BottomNav() {
             className="flex items-center justify-center -mt-6"
             aria-label="Agregar alimento"
           >
-            <div className="w-12 h-12 rounded-full bg-primary text-white flex items-center justify-center shadow-lg min-h-[44px] min-w-[44px]">
+            <div className="w-14 h-14 rounded-full bg-gradient-to-br from-primary to-primary-dark text-white flex items-center justify-center shadow-lg shadow-primary/30 ring-4 ring-background min-h-[44px] min-w-[44px]">
               <Plus size={24} />
             </div>
           </button>
           {links.slice(2).map((link) => {
             const Icon = link.icon;
-            const active = pathname === link.href;
+            const active = pathname === link.href || pathname.startsWith(`${link.href}/`);
             return (
               <Link
                 key={link.href}
@@ -58,8 +60,10 @@ export function BottomNav() {
                   active ? "text-primary" : "text-ink-muted"
                 }`}
               >
-                <Icon size={20} />
-                <span className="text-xs">{link.label}</span>
+                <span className={`flex h-7 w-12 items-center justify-center rounded-full transition-colors ${active ? "bg-primary-soft" : ""}`}>
+                  <Icon size={20} />
+                </span>
+                <span className={`text-xs ${active ? "font-semibold" : ""}`}>{link.label}</span>
               </Link>
             );
           })}

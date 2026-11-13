@@ -83,3 +83,33 @@ select {
     scroll-behavior: auto !important;
   }
 }
+
+/* Detalles de interfaz */
+@keyframes ring {
+  0%, 100% { transform: rotate(0); }
+  15% { transform: rotate(14deg); }
+  30% { transform: rotate(-12deg); }
+  45% { transform: rotate(8deg); }
+  60% { transform: rotate(-6deg); }
+}
+
+@keyframes fade-up {
+  from { opacity: 0; transform: translateY(8px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes float {
+  0%, 100% { transform: translateY(0) rotate(0); }
+  50% { transform: translateY(-8px) rotate(4deg); }
+}
+
+.animate-fade-up { animation: fade-up 0.45s ease-out both; }
+.animate-float { animation: float 6s ease-in-out infinite; }
+
+/* Filas de chips desplazables en móvil sin barra visible */
+.no-scrollbar { scrollbar-width: none; }
+.no-scrollbar::-webkit-scrollbar { display: none; }
+
+::-webkit-scrollbar { width: 10px; height: 10px; }
+::-webkit-scrollbar-thumb { background: #cfd8cf; border-radius: 999px; border: 2px solid #F7F6F2; }
+::-webkit-scrollbar-thumb:hover { background: #a9bcae; }

@@ -6,13 +6,13 @@ import { usePathname } from "next/navigation";
 import { Logo } from "./Logo";
 import { Button } from "@/components/ui/Button";
 import { useAuth } from "@/hooks/useAuth";
-import { ChevronDown, LogOut, Plus, UserRound } from "lucide-react";
+import { ChefHat, ChevronDown, Home, LogOut, Package, Plus, UserRound } from "lucide-react";
 import { FoodFormModal } from "@/components/inventory/FoodFormModal";
 
 const links = [
-  { href: "/dashboard", label: "Inicio" },
-  { href: "/inventario", label: "Inventario" },
-  { href: "/recetas", label: "Recetas" },
+  { href: "/dashboard", label: "Inicio", icon: Home },
+  { href: "/inventario", label: "Inventario", icon: Package },
+  { href: "/recetas", label: "Recetas", icon: ChefHat },
 ];
 
 export function Navbar() {
@@ -48,18 +48,23 @@ export function Navbar() {
             <Logo />
           </div>
           <nav aria-label="Navegación principal" className="flex items-center justify-center gap-1">
-              {links.map((link) => (
-                <Link
-                  key={link.href}
-                  href={link.href}
-                  aria-current={pathname === link.href ? "page" : undefined}
-                  className={`rounded-full px-4 py-2 text-sm transition-colors hover:text-emerald-800 ${
-                    pathname === link.href ? "bg-emerald-50 font-medium text-emerald-800" : "text-ink-muted"
-                  }`}
-                >
-                  {link.label}
-                </Link>
-              ))}
+              {links.map((link) => {
+                const active = pathname === link.href || pathname.startsWith(`${link.href}/`);
+                const Icon = link.icon;
+                return (
+                  <Link
+                    key={link.href}
+                    href={link.href}
+                    aria-current={active ? "page" : undefined}
+                    className={`inline-flex items-center gap-2 rounded-full px-4 py-2 text-sm transition-colors hover:text-emerald-800 ${
+                      active ? "bg-emerald-50 font-medium text-emerald-800 ring-1 ring-emerald-200/70" : "text-ink-muted"
+                    }`}
+                  >
+                    <Icon size={16} />
+                    {link.label}
+                  </Link>
+                );
+              })}
           </nav>
           <div className="flex min-w-0 flex-1 items-center justify-end gap-3">
             <Button onClick={() => setIsFormOpen(true)} size="sm">
