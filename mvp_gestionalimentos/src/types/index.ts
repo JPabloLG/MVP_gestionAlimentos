@@ -32,6 +32,9 @@ export interface FoodItem {
   updatedAt: string; // ISO
 }
 
+/** A food as entered by the user, before the app assigns id, owner and timestamps. */
+export type NewFood = Omit<FoodItem, "id" | "userId" | "createdAt" | "updatedAt">;
+
 export type ExpiryStatus = "expired" | "critical" | "soon" | "fresh";
 
 export interface RecipeIngredient {

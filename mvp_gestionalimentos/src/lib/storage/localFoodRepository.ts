@@ -40,6 +40,13 @@ export class LocalFoodRepository implements FoodRepository {
     return food;
   }
 
+  /** Adds several foods of one owner in a single write. */
+  async addFoods(foods: FoodItem[]): Promise<void> {
+    if (foods.length === 0) return;
+    const userId = foods[0].userId;
+    this.saveFoods(userId, [...this.readFoods(userId), ...foods.filter((f) => f.userId === userId)]);
+  }
+
   async updateFood(food: FoodItem): Promise<FoodItem> {
     const foods = this.readFoods(food.userId);
     const idx = foods.findIndex((f) => f.id === food.id && f.userId === food.userId);

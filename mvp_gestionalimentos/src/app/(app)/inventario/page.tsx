@@ -128,7 +128,19 @@ export default function InventarioPage() {
         </select>
       </div>
 
-      {filtered.length === 0 ? (
+      {foods.length > 0 && filtered.length === 0 ? (
+        <EmptyState
+          emoji="🔍"
+          title="Sin resultados"
+          description="Ningún alimento coincide con la búsqueda o los filtros."
+          actionLabel="Limpiar filtros"
+          onAction={() => {
+            setSearch("");
+            setCategoryFilter("all");
+            setStatusFilter("all");
+          }}
+        />
+      ) : filtered.length === 0 ? (
         <EmptyState
           emoji="🛒"
           title="Tu inventario está vacío"

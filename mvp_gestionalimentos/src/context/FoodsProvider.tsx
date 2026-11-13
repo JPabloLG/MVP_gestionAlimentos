@@ -9,13 +9,20 @@
  * can forget to handle it.
  */
 import React, { createContext, useCallback, useContext, useEffect, useState } from "react";
-import { FoodItem, UserStats } from "@/types";
+import { FoodItem, NewFood, UserStats } from "@/types";
+import { missingDemoFoods } from "@/lib/foods";
 import { localFoodRepo } from "@/lib/storage";
 import { onStorageIssue } from "@/lib/storage/safeStorage";
 import { useAuth } from "./AuthProvider";
 import { useToast } from "./ToastProvider";
 
-export type NewFood = Omit<FoodItem, "id" | "userId" | "createdAt" | "updatedAt">;
+export type { NewFood };
+
+/** Stamps a new food with its id, timestamps and owner. The owner is always the session user (RN-01). */
+function toFoodItem(food: NewFood, ownerId: string): FoodItem {
+  const now = new Date().toISOString();
+  return { ...food, id: crypto.randomUUID(), userId: ownerId, createdAt: now, updatedAt: now, notes: food.notes || "" };
+}
 
 interface FoodsContextType {
   foods: FoodItem[];
@@ -85,18 +92,7 @@ export function FoodsProvider({ children }: { children: React.ReactNode }) {
     }
   };
 
-  const addFood = (food: NewFood) =>
-    mutate((ownerId) => {
-      const now = new Date().toISOString();
-      return localFoodRepo.addFood({
-        ...food,
-        id: crypto.randomUUID(),
-        userId: ownerId,
-        createdAt: now,
-        updatedAt: now,
-        notes: food.notes || "",
-      });
-    });
+  const addFood = (food: NewFood) => mutate((ownerId) => localFoodRepo.addFood(toFoodItem(food, ownerId)));
 
   const updateFood = (food: FoodItem) =>
     mutate((ownerId) => localFoodRepo.updateFood({ ...food, userId: ownerId }));
@@ -110,35 +106,12 @@ export function FoodsProvider({ children }: { children: React.ReactNode }) {
 
   const markWasted = (id: string) => settleFoods([id], "wasted");
 
-  const loadDemoFoods = async () => {
-    if (!user?.id) return false;
-    const today = new Date();
-    const addDays = (days: number) => {
-      const d = new Date(today);
-      d.setDate(d.getDate() + days);
-      const yyyy = d.getFullYear();
-      const mm = String(d.getMonth() + 1).padStart(2, "0");
-      const dd = String(d.getDate()).padStart(2, "0");
-      return `${yyyy}-${mm}-${dd}`;
-    };
-    const demo: NewFood[] = [
-      { name: "Leche", quantity: 1, unit: "l", category: "lacteos", expiresAt: addDays(7) },
-      { name: "Huevos", quantity: 12, unit: "unidades", category: "despensa", expiresAt: addDays(14) },
-      { name: "Tomate", quantity: 6, unit: "unidades", category: "verduras", expiresAt: addDays(1) },
-      { name: "Pollo", quantity: 500, unit: "g", category: "carnes", expiresAt: addDays(0) },
-      { name: "Banano maduro", quantity: 6, unit: "unidades", category: "frutas", expiresAt: addDays(-1) },
-      { name: "Arroz", quantity: 1, unit: "kg", category: "granos", expiresAt: addDays(60) },
-      { name: "Queso", quantity: 250, unit: "g", category: "lacteos", expiresAt: addDays(4) },
-      { name: "Cebolla", quantity: 1, unit: "kg", category: "verduras", expiresAt: addDays(10) },
-      { name: "Aguacate", quantity: 2, unit: "unidades", category: "frutas", expiresAt: addDays(2) },
-      { name: "Yogurt", quantity: 4, unit: "unidades", category: "lacteos", expiresAt: addDays(3) },
-      { name: "Pan", quantity: 1, unit: "paquetes", category: "panaderia", expiresAt: addDays(5) },
-    ];
-    for (const d of demo) {
-      if (!(await addFood(d))) return false;
-    }
-    return true;
-  };
+  const loadDemoFoods = () =>
+    mutate(async (ownerId) => {
+      // Read fresh from storage so two quick taps cannot both see an empty inventory.
+      const current = await localFoodRepo.getFoods(ownerId);
+      await localFoodRepo.addFoods(missingDemoFoods(current).map((food) => toFoodItem(food, ownerId)));
+    });
 
   return (
     <FoodsContext.Provider
