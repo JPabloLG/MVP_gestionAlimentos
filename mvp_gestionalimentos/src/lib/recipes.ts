@@ -27,19 +27,16 @@ function removeAccents(text: string): string {
 
 export function normalize(text: string): string {
   if (!text) return "";
-  let t = removeAccents(text.toLowerCase());
-  t = t.replace(/\s+/g, " ").trim();
-  // simple singularization for common Spanish plurals
-  // For words ending in 'es' like 'tomates' (ends in consonant+e+s in some cases) - better to try removing just 's' first in many cases
-  if (t.endsWith("es") && t.length > 4) {
-    // Try removing just 's' first: tomates -> tomate (correct). If that doesn't look right, also try removing 'es'
-    const withoutS = t.slice(0, -1); // tomatoes without final s
-    // prefer withoutS for most cases like tomates, papas
-    t = withoutS;
-  } else if (t.endsWith("s") && t.length > 3 && !t.endsWith("us") && !t.endsWith("is")) {
-    t = t.slice(0, -1);
-  }
-  return t;
+  const words = removeAccents(text.toLowerCase()).replace(/\s+/g, " ").trim().split(" ");
+  return words
+    .map((word) => {
+      if (word.endsWith("es") && word.length > 4) return word.slice(0, -1);
+      if (word.endsWith("s") && word.length > 3 && !word.endsWith("us") && !word.endsWith("is")) {
+        return word.slice(0, -1);
+      }
+      return word;
+    })
+    .join(" ");
 }
 
 function getSynonymKeys(normalized: string): string[] {

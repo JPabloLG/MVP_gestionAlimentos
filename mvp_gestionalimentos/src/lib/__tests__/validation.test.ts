@@ -44,11 +44,20 @@ describe('auth schemas (RF-01, RF-02)', () => {
   it.each([
     ['blank name', { name: '  ' }],
     ['short password', { password: '1234567', confirmPassword: '1234567' }],
-    ['mismatched confirmation', { confirmPassword: '87654321' }],
     ['terms not accepted', { acceptTerms: false }],
     ['bad email', { email: 'ana' }],
   ])('rejects %s', (_label, patch) => {
     expect(registerSchema.safeParse({ ...account, ...patch }).success).toBe(false);
+  });
+
+  it('does not require a confirmation password', () => {
+    const registration = {
+      name: account.name,
+      email: account.email,
+      password: account.password,
+      acceptTerms: account.acceptTerms,
+    };
+    expect(registerSchema.safeParse(registration).success).toBe(true);
   });
 });
 

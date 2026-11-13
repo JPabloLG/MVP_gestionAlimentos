@@ -121,7 +121,7 @@ export default function RecetaDetallePage() {
             className="shrink-0"
           >
             {isCooking ? <CookingPot size={17} /> : <Check size={17} />}
-            {isCooking ? "Actualizando..." : "Marcar como cocinada"}
+            {isCooking ? "Actualizando..." : "Marcar como cocinada (Descontar del inventario)"}
           </Button>
         </div>
       </Card>

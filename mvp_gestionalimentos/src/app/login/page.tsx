@@ -67,7 +67,7 @@ export default function LoginPage() {
             <Button
               type="button"
               variant="secondary"
-              className="w-full border-emerald-800 bg-emerald-800 text-white hover:bg-emerald-900 hover:text-white"
+              className="w-full border-emerald-800 bg-emerald-800 text-black hover:bg-emerald-900 hover:text-black"
               onClick={handleDemoLogin}
               disabled={isDemoLoading}
             >

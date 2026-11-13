@@ -60,7 +60,7 @@ export default function RegisterPage() {
             <span className="text-xs font-medium text-ink-muted">o continúa rápido</span>
             <span className="h-px flex-1 bg-border" />
           </div>
-          <Button type="button" variant="secondary" className="w-full border-emerald-800 bg-emerald-800 text-white hover:bg-emerald-900 hover:text-white" onClick={handleDemoLogin} disabled={isDemoLoading}>
+          <Button type="button" variant="secondary" className="w-full border-emerald-800 bg-emerald-800 text-black hover:bg-emerald-900 hover:text-black" onClick={handleDemoLogin} disabled={isDemoLoading}>
             <Sparkles size={16} />
             {isDemoLoading ? "Preparando tu cocina..." : "Entrar con Cuenta Demo (1 clic)"}
             {!isDemoLoading && <UserRound size={16} />}

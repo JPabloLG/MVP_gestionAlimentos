@@ -100,5 +100,13 @@ describe('recipes', () => {
     expect(insights[0].readyToCook).toBe(true);
     expect(insights.find((recipe) => recipe.id === "onion")?.usedFoods).toHaveLength(0);
     expect(insights.find((recipe) => recipe.id === "onion")?.coverage).toBe(0);
+
+    const expiresInFourDays = getRecipeInsights(
+      [food("soon", "Tomate", "2026-11-01")],
+      [testRecipes[0]],
+      today
+    )[0];
+    expect(expiresInFourDays.usedFoods).toHaveLength(1);
+    expect(expiresInFourDays.urgentFoods).toHaveLength(0);
   });
 });

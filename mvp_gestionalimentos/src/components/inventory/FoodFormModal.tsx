@@ -157,11 +157,11 @@ export function FoodFormModal({ isOpen, onClose, editFood, onSuccess }: FoodForm
       photoUrl: data.photoUrl || undefined,
     };
     if (target) {
-      if (!(await updateFood({ ...target, ...values }))) return;
+      await updateFood({ ...target, ...values });
       showToast("Alimento actualizado");
       close();
     } else {
-      if (!(await addFood(values))) return;
+      await addFood(values);
       showToast("Alimento agregado");
       setDuplicates([]);
       const prefs = { unit: values.unit, category: values.category };
